@@ -59,27 +59,29 @@ marquee.removeItem(); // removes last original item
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `speed` | number | 50 | Scrolling speed in pixels per second |
+| `speed` | number | 50      | Scrolling speed in pixels per second |
 | `gap` | number | CSS gap | Space between items in px |
-| `pauseOnHover` | boolean | false | Pause marquee on hover |
-| `pauseOnClick` | boolean | false | Pause marquee on click, resume on click outside |
-| `adaptivePause` | boolean | false | Combine hover and click pause based on device width (hover on ≥1024px, click on <1024px) |
-| `syncPause` | boolean | false | if a pause is set on one markyu, all the others are also paused |
-| `initialShift` | boolean/number | false | Shift content initially (true → container width, number → px) |
-| `reverse` | boolean | false | Reverse scrolling direction |
-| `pauseOnInvisible` | boolean | false | Pause animation when marquee is not visible in viewport (uses IntersectionObserver) |
+| `pauseOnHover` | boolean | false   | Pause marquee on hover |
+| `pauseOnClick` | boolean | false   | Pause marquee on click, resume on click outside |
+| `adaptivePause` | boolean | false   | Combine hover and click pause based on device width (hover on ≥1024px, click on <1024px) |
+| `syncPause` | boolean | false   | if a pause is set on one markyu, all the others are also paused |
+| `initialShift` | boolean/number | false   | Shift content initially (true → container width, number → px) |
+| `reverse` | boolean | false   | Reverse scrolling direction |
+| `pauseOnInvisible` | boolean | false   | Pause animation when marquee is not visible in viewport (uses IntersectionObserver) |
+| `repeatCount` | number | 3       | The number of repetitions of elements for smooth continuous animation. By default, 3, if you are sure that there are many elements, you can put 2, to save resources, in extreme cases, you can put 4-6 |
 
 ## Methods
 
-| Method | Description |
-|--------|-------------|
-| `start()` | Start marquee animation |
-| `stop()` | Stop animation completely |
-| `pause()` | Pause animation temporarily |
-| `resume()` | Resume paused animation |
+| Method | Description                                  |
+|--------|----------------------------------------------|
+| `start()` | Start marquee animation                      |
+| `stop()` | Stop animation completely                    |
+| `pause()` | Pause animation temporarily                  |
+| `resume()` | Resume paused animation                      |
 | `refresh()` | Recalculate dimensions and restart animation |
-| `addItem(html)` | Add a new item dynamically |
-| `removeItem()` | Remove the last original item |
+| `addItem(html)` | Add a new item dynamically                   |
+| `removeItem()` | Remove the last original item                |
+| `destroy()` | Destroy marquee animations                   |
 
 ## Notes
 
