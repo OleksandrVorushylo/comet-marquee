@@ -12,7 +12,9 @@ export class CometMarquee {
       throw new Error('CometMarquee: invalid selector');
     }
 
-    this.instances = this.containers.map(container => new CometMarqueeInstance(container, options));
+    this.instances = this.containers.map((container, idx) =>
+        new CometMarqueeInstance(container, options, idx)
+    );
   }
 
   start() { this.instances.forEach(i => i.startAnimation()); }
@@ -25,7 +27,7 @@ export class CometMarquee {
 }
 
 class CometMarqueeInstance {
-  constructor(container, options = {}) {
+  constructor(container, options = {}, idx = 0) {
     this.container = container;
     this.content = container.querySelector('.comet-marquee-content');
     this.items = Array.from(this.content.children);
@@ -36,13 +38,13 @@ class CometMarqueeInstance {
     this.options = {
       speed: options.speed ?? 50,
       gap: options.gap ?? (Number.isFinite(parsedGap) ? parsedGap : 0),
-      pauseOnHover: options.pauseOnHover ?? false,
-      pauseOnClick: options.pauseOnClick ?? false,
-      adaptivePause: options.adaptivePause ?? false,
-      reverse: options.reverse ?? false,
+      pauseOnHover: !!options.pauseOnHover,
+      pauseOnClick: !!options.pauseOnClick,
+      adaptivePause: !!options.adaptivePause,
+      reverse: !!options.reverse,
       initialShift: options.initialShift ?? false,
-      pauseOnInvisible: options.pauseOnInvisible ?? false,
-      syncPause: options.syncPause ?? false
+      pauseOnInvisible: !!options.pauseOnInvisible,
+      syncPause: !!options.syncPause
     };
 
     if (!container.__allInstances) container.__allInstances = [];
@@ -55,6 +57,7 @@ class CometMarqueeInstance {
     this.contentWidth = 0;
     this.containerWidth = 0;
     this.lastTime = 0;
+    this.idx = idx;
 
     this.init();
     this.bindEvents();
@@ -73,6 +76,7 @@ class CometMarqueeInstance {
 
   setupContent() {
     this.content.style.willChange = 'transform';
+
     if (!this.shouldAnimate) {
       this.content.querySelectorAll('.comet-marquee-clone').forEach(n => n.remove());
       this.content.style.transform = 'translate3d(0,0,0)';
@@ -82,6 +86,7 @@ class CometMarqueeInstance {
     }
 
     this.content.querySelectorAll('.comet-marquee-clone').forEach(n => n.remove());
+
     this.items.forEach(item => {
       const clone = item.cloneNode(true);
       clone.classList.add('comet-marquee-clone');
@@ -90,12 +95,8 @@ class CometMarqueeInstance {
 
     this.content.style.width = `${this.contentWidth * 2 + this.options.gap}px`;
 
-    if (this.options.initialShift) {
-      const shift = typeof this.options.initialShift === 'number' ? this.options.initialShift : this.containerWidth;
-      this.currentTranslate = this.options.reverse ? shift : -shift;
-    } else {
-      this.currentTranslate = this.options.reverse ? this.contentWidth : 0;
-    }
+    const shift = typeof this.options.initialShift === 'number' ? this.options.initialShift : this.containerWidth;
+    this.currentTranslate = this.options.reverse ? shift : -shift;
     this.content.style.transform = `translate3d(${this.currentTranslate}px,0,0)`;
   }
 
@@ -124,9 +125,7 @@ class CometMarqueeInstance {
       const dir = this.options.reverse ? 1 : -1;
       this.currentTranslate += dir * this.options.speed * dt;
 
-      const resetPoint = this.options.reverse
-          ? this.contentWidth + this.options.gap
-          : -(this.contentWidth + this.options.gap);
+      const resetPoint = this.options.reverse ? this.contentWidth + this.options.gap : -(this.contentWidth + this.options.gap);
 
       if ((!this.options.reverse && this.currentTranslate <= resetPoint) ||
           (this.options.reverse && this.currentTranslate >= resetPoint)) {
@@ -141,8 +140,11 @@ class CometMarqueeInstance {
 
   pause() {
     this.isPaused = true;
-    if (this.options.syncPause && this.container.__allInstances) {
-      this.container.__allInstances.forEach(inst => { if (!inst.isPaused) inst.isPaused = true; });
+    if (this.options.syncPause) {
+      document.querySelectorAll('.comet-marquee-content').forEach(c => {
+        const insts = c.__allInstances || [];
+        insts.forEach(inst => { inst.isPaused = true; });
+      });
     }
   }
 
