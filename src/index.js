@@ -77,23 +77,26 @@ class CometMarqueeInstance {
   setupContent() {
     this.content.style.willChange = 'transform';
 
+    this.content.querySelectorAll('.comet-marquee-clone').forEach(n => n.remove());
+
     if (!this.shouldAnimate) {
-      this.content.querySelectorAll('.comet-marquee-clone').forEach(n => n.remove());
       this.content.style.transform = 'translate3d(0,0,0)';
       this.content.style.width = 'auto';
       this.currentTranslate = 0;
       return;
     }
 
-    this.content.querySelectorAll('.comet-marquee-clone').forEach(n => n.remove());
+    const repeatCount = Math.max(2, Math.ceil((this.containerWidth * 2) / this.contentWidth));
+    for (let r = 0; r < repeatCount; r++) {
+      this.items.forEach(item => {
+        const clone = item.cloneNode(true);
+        clone.classList.add('comet-marquee-clone');
+        this.content.appendChild(clone);
+      });
+    }
 
-    this.items.forEach(item => {
-      const clone = item.cloneNode(true);
-      clone.classList.add('comet-marquee-clone');
-      this.content.appendChild(clone);
-    });
-
-    this.content.style.width = `${this.contentWidth * 2 + this.options.gap}px`;
+    const totalItems = this.items.length * (repeatCount + 1);
+    this.content.style.width = `${this.contentWidth * (repeatCount + 1) + this.options.gap * (totalItems - 1)}px`;
 
     let shift = 0;
     if (this.options.initialShift === true) {
@@ -102,7 +105,11 @@ class CometMarqueeInstance {
       shift = this.options.initialShift;
     }
 
-    this.currentTranslate = this.options.reverse ? shift : -shift;
+    if (this.options.reverse) {
+      this.currentTranslate = -(this.contentWidth * repeatCount) + shift;
+    } else {
+      this.currentTranslate = -shift;
+    }
     this.content.style.transform = `translate3d(${this.currentTranslate}px,0,0)`;
   }
 
@@ -128,17 +135,17 @@ class CometMarqueeInstance {
     this.lastTime = currentTime;
 
     if (!this.isPaused) {
+      const totalContentWidth = this.content.getBoundingClientRect().width;
+
       if (this.options.reverse) {
         this.currentTranslate += this.options.speed * dt;
-
-        if (this.currentTranslate >= this.containerWidth) {
-          this.currentTranslate = -this.contentWidth;
+        if (this.currentTranslate >= 0) {
+          this.currentTranslate -= totalContentWidth;
         }
       } else {
         this.currentTranslate -= this.options.speed * dt;
-
-        if (this.currentTranslate <= -this.contentWidth) {
-          this.currentTranslate = this.containerWidth;
+        if (this.currentTranslate <= -totalContentWidth) {
+          this.currentTranslate += totalContentWidth;
         }
       }
 
@@ -288,7 +295,7 @@ class CometMarqueeInstance {
 
   removeItem() {
     const originals = Array.from(this.content.children).filter(c => !c.classList.contains('comet-marquee-clone'));
-    if (originals.length > 1) {
+    if (originals.length > 0) {
       originals[originals.length - 1].remove();
       this.refresh();
     }
