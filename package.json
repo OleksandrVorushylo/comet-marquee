@@ -1,6 +1,6 @@
 {
 	"name": "comet-marquee",
-	"version": "1.0.1",
+	"version": "1.0.5",
 	"description": "Simple marquee plugin with smooth scroll",
 	"main": "dist/comet-marquee.cjs",
 	"module": "dist/comet-marquee.modern.js",

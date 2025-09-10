@@ -64,6 +64,9 @@ marquee.removeItem(); // removes last original item
 | `pauseOnHover` | boolean | false | Pause marquee on hover |
 | `pauseOnClick` | boolean | false | Pause marquee on click, resume on click outside |
 | `initialShift` | boolean/number | false | Shift content initially (true → container width, number → px) |
+| `reverse` | boolean | false | Reverse scrolling direction |
+| `adaptivePause` | boolean | false | Combine hover and click pause based on device width (hover on ≥1024px, click on <1024px) |
+| `pauseOnInvisible` | boolean | false | Pause animation when marquee is not visible in viewport (uses IntersectionObserver) |
 
 ## Methods
 
