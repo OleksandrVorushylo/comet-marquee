@@ -1,0 +1,21 @@
+.comet-marquee-container {
+  width: 100%;
+  max-width: 100%;
+  padding: 1px;
+}
+
+.comet-marquee-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  will-change: transform;
+}
+
+.comet-marquee-item {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: transform 0.3s ease;
+}

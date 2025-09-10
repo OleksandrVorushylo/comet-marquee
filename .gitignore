@@ -1,0 +1,16 @@
+.idea/
+.vscode/
+
+# Node
+node_modules/
+npm-debug.log
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Build output
+dist/
+
+# System
+.DS_Store
+Thumbs.db
