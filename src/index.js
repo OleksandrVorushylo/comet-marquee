@@ -47,8 +47,8 @@ class CometMarqueeInstance {
       syncPause: !!options.syncPause
     };
 
-    if (!container.__allInstances) container.__allInstances = [];
-    container.__allInstances.push(this);
+    if (!window.__allCometMarqueeInstances) window.__allCometMarqueeInstances = [];
+    window.__allCometMarqueeInstances.push(this);
 
     this.isAnimating = false;
     this.isPaused = false;
@@ -95,7 +95,13 @@ class CometMarqueeInstance {
 
     this.content.style.width = `${this.contentWidth * 2 + this.options.gap}px`;
 
-    const shift = typeof this.options.initialShift === 'number' ? this.options.initialShift : this.containerWidth;
+    let shift = 0;
+    if (this.options.initialShift === true) {
+      shift = this.containerWidth;
+    } else if (typeof this.options.initialShift === 'number') {
+      shift = this.options.initialShift;
+    }
+
     this.currentTranslate = this.options.reverse ? shift : -shift;
     this.content.style.transform = `translate3d(${this.currentTranslate}px,0,0)`;
   }
@@ -122,14 +128,18 @@ class CometMarqueeInstance {
     this.lastTime = currentTime;
 
     if (!this.isPaused) {
-      const dir = this.options.reverse ? 1 : -1;
-      this.currentTranslate += dir * this.options.speed * dt;
+      if (this.options.reverse) {
+        this.currentTranslate += this.options.speed * dt;
 
-      const resetPoint = this.options.reverse ? this.contentWidth + this.options.gap : -(this.contentWidth + this.options.gap);
+        if (this.currentTranslate >= this.containerWidth) {
+          this.currentTranslate = -this.contentWidth;
+        }
+      } else {
+        this.currentTranslate -= this.options.speed * dt;
 
-      if ((!this.options.reverse && this.currentTranslate <= resetPoint) ||
-          (this.options.reverse && this.currentTranslate >= resetPoint)) {
-        this.currentTranslate = this.options.reverse ? -this.contentWidth : 0;
+        if (this.currentTranslate <= -this.contentWidth) {
+          this.currentTranslate = this.containerWidth;
+        }
       }
 
       this.content.style.transform = `translate3d(${this.currentTranslate}px,0,0)`;
@@ -140,10 +150,11 @@ class CometMarqueeInstance {
 
   pause() {
     this.isPaused = true;
-    if (this.options.syncPause) {
-      document.querySelectorAll('.comet-marquee-content').forEach(c => {
-        const insts = c.__allInstances || [];
-        insts.forEach(inst => { inst.isPaused = true; });
+    if (this.options.syncPause && window.__allCometMarqueeInstances) {
+      window.__allCometMarqueeInstances.forEach(inst => {
+        if (inst !== this) {
+          inst.isPaused = true;
+        }
       });
     }
   }
@@ -153,7 +164,23 @@ class CometMarqueeInstance {
     if (this.isPaused) {
       this.isPaused = false;
       this.lastTime = performance.now();
-      if (!this.isAnimating) { this.isAnimating = true; this.animate(); }
+      if (!this.isAnimating) {
+        this.isAnimating = true;
+        this.animate();
+      }
+    }
+
+    if (this.options.syncPause && window.__allCometMarqueeInstances) {
+      window.__allCometMarqueeInstances.forEach(inst => {
+        if (inst !== this && inst.isPaused) {
+          inst.isPaused = false;
+          inst.lastTime = performance.now();
+          if (!inst.isAnimating) {
+            inst.isAnimating = true;
+            inst.animate();
+          }
+        }
+      });
     }
   }
 
@@ -172,30 +199,62 @@ class CometMarqueeInstance {
   bindEvents() {
     const setupAdaptivePause = () => {
       const desktop = window.innerWidth >= 1024;
+      this.container.removeEventListener('mouseenter', this._hoverPause);
+      this.container.removeEventListener('mouseleave', this._hoverResume);
+      this.container.removeEventListener('click', this._clickToggle);
+      document.removeEventListener('click', this._documentClick);
+
       if (desktop) {
-        this.container.addEventListener('mouseenter', () => this.pause());
-        this.container.addEventListener('mouseleave', () => this.resume());
+        this._hoverPause = () => this.pause();
+        this._hoverResume = () => this.resume();
+        this.container.addEventListener('mouseenter', this._hoverPause);
+        this.container.addEventListener('mouseleave', this._hoverResume);
       } else {
-        this.container.addEventListener('click', e => { e.stopPropagation(); this.isPaused ? this.resume() : this.pause(); });
-        document.addEventListener('click', e => { if (!this.container.contains(e.target) && this.isPaused) this.resume(); });
+        this._clickToggle = (e) => {
+          e.stopPropagation();
+          this.isPaused ? this.resume() : this.pause();
+        };
+        this._documentClick = (e) => {
+          if (!this.container.contains(e.target) && this.isPaused) this.resume();
+        };
+        this.container.addEventListener('click', this._clickToggle);
+        document.addEventListener('click', this._documentClick);
       }
     };
 
-    if (this.options.adaptivePause) setupAdaptivePause();
-    else {
+    if (this.options.adaptivePause) {
+      setupAdaptivePause();
+      this._resizeHandler = () => setupAdaptivePause();
+      window.addEventListener('resize', this._resizeHandler);
+    } else {
       if (this.options.pauseOnHover) {
-        this.container.addEventListener('mouseenter', () => this.pause());
-        this.container.addEventListener('mouseleave', () => this.resume());
+        this._hoverPause = () => this.pause();
+        this._hoverResume = () => this.resume();
+        this.container.addEventListener('mouseenter', this._hoverPause);
+        this.container.addEventListener('mouseleave', this._hoverResume);
       }
       if (this.options.pauseOnClick) {
-        this.container.addEventListener('click', e => { e.stopPropagation(); this.isPaused ? this.resume() : this.pause(); });
-        document.addEventListener('click', e => { if (!this.container.contains(e.target) && this.isPaused) this.resume(); });
+        this._clickToggle = (e) => {
+          e.stopPropagation();
+          this.isPaused ? this.resume() : this.pause();
+        };
+        this._documentClick = (e) => {
+          if (!this.container.contains(e.target) && this.isPaused) this.resume();
+        };
+        this.container.addEventListener('click', this._clickToggle);
+        document.addEventListener('click', this._documentClick);
       }
     }
 
     if (this.options.pauseOnInvisible) {
       this.io = new IntersectionObserver(entries => {
-        entries.forEach(entry => entry.isIntersecting ? this.resume() : this.pause());
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            this.resume();
+          } else {
+            this.pause();
+          }
+        });
       }, { threshold: 0.1 });
       this.io.observe(this.container);
     }
@@ -203,11 +262,16 @@ class CometMarqueeInstance {
     this.ro = new ResizeObserver(() => this.refresh());
     this.ro.observe(this.container);
 
-    window.addEventListener('orientationchange', () => this.refresh());
+    window.addEventListener('orientationchange', () => {
+      setTimeout(() => this.refresh(), 100);
+    });
 
     const mql = window.matchMedia('(prefers-reduced-motion: reduce)');
+    this._motionChangeHandler = () => mql.matches ? this.pause() : this.resume();
     if (mql.matches) this.pause();
-    mql.addEventListener?.('change', () => mql.matches ? this.pause() : this.resume());
+    if (mql.addEventListener) {
+      mql.addEventListener('change', this._motionChangeHandler);
+    }
   }
 
   addItem(itemHtml) {
@@ -227,6 +291,31 @@ class CometMarqueeInstance {
     if (originals.length > 1) {
       originals[originals.length - 1].remove();
       this.refresh();
+    }
+  }
+
+  destroy() {
+    this.stop();
+
+    if (window.__allCometMarqueeInstances) {
+      const index = window.__allCometMarqueeInstances.indexOf(this);
+      if (index > -1) {
+        window.__allCometMarqueeInstances.splice(index, 1);
+      }
+    }
+
+    if (this.io) this.io.disconnect();
+    if (this.ro) this.ro.disconnect();
+
+    this.container.removeEventListener('mouseenter', this._hoverPause);
+    this.container.removeEventListener('mouseleave', this._hoverResume);
+    this.container.removeEventListener('click', this._clickToggle);
+    document.removeEventListener('click', this._documentClick);
+    window.removeEventListener('resize', this._resizeHandler);
+
+    const mql = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (mql.removeEventListener) {
+      mql.removeEventListener('change', this._motionChangeHandler);
     }
   }
 }
