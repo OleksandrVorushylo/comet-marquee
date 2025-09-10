@@ -1,7 +1,7 @@
 {
 	"name": "comet-marquee",
-	"version": "1.0.5",
-	"description": "Simple marquee plugin with smooth scroll",
+	"version": "1.0.6",
+	"description": "A lightweight, smooth-scrolling marquee plugin for modern browsers. Allows continuous horizontal scrolling of content with optional pause on hover or click.",
 	"main": "dist/comet-marquee.cjs",
 	"module": "dist/comet-marquee.modern.js",
 	"unpkg": "dist/comet-marquee.umd.js",
