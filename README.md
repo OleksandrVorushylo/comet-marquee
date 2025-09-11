@@ -6,10 +6,13 @@ A lightweight, smooth-scrolling marquee plugin for modern browsers. Allows conti
 
 [![npm](https://img.shields.io/npm/v/comet-marquee?style=flat&logo=npm)](https://www.npmjs.com/package/comet-marquee)
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=flat&logo=github&logoColor=white)](https://github.com/OleksandrVorushylo/comet-marquee)
+[![unpkg](https://img.shields.io/badge/unpkg-CDN-blue?logo=unpkg)](https://unpkg.com/comet-marquee)
 
 ---
 
 ## Installation
+
+### npm/pnpm
 
 ```bash
 npm install comet-marquee
@@ -20,6 +23,13 @@ pnpm add comet-marquee
 ```javascript
 import { CometMarquee } from 'comet-marquee';
 import 'comet-marquee/dist/comet-marquee.css';
+```
+
+### cdn (unpkg)
+
+```html
+<script src="https://unpkg.com/comet-marquee@latest/dist/comet-marquee.umd.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/comet-marquee@latest/dist/comet-marquee.css">
 ```
 
 ## HTML Structure
