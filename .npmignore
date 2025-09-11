@@ -1,4 +1,12 @@
+.github/
+.git/
+.gitignore
+
 .idea/
 .vscode/
+
 node_modules/
+yarn.lock
+pnpm-lock.yaml
 *.log
+.DS_Store

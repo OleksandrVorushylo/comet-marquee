@@ -1,4 +1,4 @@
-# CometMarquee
+# 💫 CometMarquee 🚀
 
 A lightweight, smooth-scrolling marquee plugin for modern browsers. Allows continuous horizontal scrolling of content with automatic performance optimization and accessibility features.
 
