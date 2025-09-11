@@ -4,6 +4,11 @@ A lightweight, smooth-scrolling marquee plugin for modern browsers. Allows conti
 
 ---
 
+[![npm](https://img.shields.io/npm/v/comet-marquee?style=flat&logo=npm)](https://www.npmjs.com/package/comet-marquee)
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=flat&logo=github&logoColor=white)](https://github.com/OleksandrVorushylo/comet-marquee)
+
+---
+
 ## Installation
 
 ```bash
