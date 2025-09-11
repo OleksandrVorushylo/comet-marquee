@@ -45,7 +45,8 @@ class CometMarqueeInstance {
       initialShift: options.initialShift ?? false,
       pauseOnInvisible: !!options.pauseOnInvisible,
       syncPause: !!options.syncPause,
-      repeatCount: options.repeatCount ?? 3
+      repeatCount: options.repeatCount ?? 3,
+      develop: !!options.develop
     };
 
     if (!window.__allCometMarqueeInstances) window.__allCometMarqueeInstances = [];
@@ -64,6 +65,23 @@ class CometMarqueeInstance {
     this.bindEvents();
   }
 
+  dispatchEvent(eventName, detail = {}) {
+    const event = new CustomEvent(`comet-marquee:${eventName}`, {
+      detail: {
+        instance: this,
+        container: this.container,
+        ...detail
+      },
+      bubbles: true,
+      cancelable: true
+    });
+    this.container.dispatchEvent(event);
+
+    if (this.options.develop) {
+      console.log(`[CometMarquee] ${eventName}`, detail);
+    }
+  }
+
   getTotalWidth() {
     const widths = this.items.map(el => el.getBoundingClientRect().width);
     return widths.length ? widths.reduce((a, b) => a + b, 0) + this.options.gap * (this.items.length - 1) : 0;
@@ -73,28 +91,48 @@ class CometMarqueeInstance {
     this.containerWidth = this.container.getBoundingClientRect().width;
     this.contentWidth = this.getTotalWidth();
     this.shouldAnimate = this.contentWidth > this.containerWidth + 1;
+
+    this.dispatchEvent('dimensions-calculated', {
+      containerWidth: this.containerWidth,
+      contentWidth: this.contentWidth,
+      shouldAnimate: this.shouldAnimate
+    });
   }
 
   setupContent() {
     this.content.style.willChange = 'transform';
 
-    this.content.querySelectorAll('.comet-marquee-clone').forEach(n => n.remove());
+    const existingClones = this.content.querySelectorAll('.comet-marquee-clone');
+    existingClones.forEach(n => n.remove());
 
     if (!this.shouldAnimate) {
       this.content.style.transform = 'translate3d(0,0,0)';
       this.content.style.width = 'auto';
       this.currentTranslate = 0;
+
+      this.dispatchEvent('animation-not-needed');
       return;
     }
 
+    this.dispatchEvent('clones-creating');
+
     const repeatCount = Math.max(this.options.repeatCount, Math.ceil((this.containerWidth * this.options.repeatCount) / this.contentWidth));
+    const clonedItems = [];
+
     for (let r = 0; r < repeatCount; r++) {
       this.items.forEach(item => {
         const clone = item.cloneNode(true);
         clone.classList.add('comet-marquee-clone');
         this.content.appendChild(clone);
+        clonedItems.push(clone);
       });
     }
+
+    this.dispatchEvent('clones-created', {
+      cloneCount: clonedItems.length,
+      repeatCount,
+      clonedItems
+    });
 
     const totalItems = this.items.length * (repeatCount + 1);
     this.content.style.width = `${this.contentWidth * (repeatCount + 1) + this.options.gap * (totalItems - 1)}px`;
@@ -112,20 +150,36 @@ class CometMarqueeInstance {
       this.currentTranslate = -shift;
     }
     this.content.style.transform = `translate3d(${this.currentTranslate}px,0,0)`;
+
+    this.dispatchEvent('content-setup', {
+      totalWidth: this.content.style.width,
+      initialTranslate: this.currentTranslate
+    });
   }
 
   init() {
+    this.dispatchEvent('init-start');
+
     this.calculateDimensions();
     this.setupContent();
     this.startAnimation();
+
+    this.dispatchEvent('init-complete');
   }
 
   startAnimation() {
-    if (!this.shouldAnimate) return;
+    if (!this.shouldAnimate) {
+      this.dispatchEvent('animation-skipped');
+      return;
+    }
+
     this.isAnimating = true;
     this.isPaused = false;
     this.lastTime = performance.now();
     cancelAnimationFrame(this.animationId);
+
+    this.dispatchEvent('animation-started');
+
     this.animate();
   }
 
@@ -142,11 +196,13 @@ class CometMarqueeInstance {
         this.currentTranslate += this.options.speed * dt;
         if (this.currentTranslate >= 0) {
           this.currentTranslate -= totalContentWidth;
+          this.dispatchEvent('animation-cycle', { direction: 'reverse' });
         }
       } else {
         this.currentTranslate -= this.options.speed * dt;
         if (this.currentTranslate <= -totalContentWidth) {
           this.currentTranslate += totalContentWidth;
+          this.dispatchEvent('animation-cycle', { direction: 'forward' });
         }
       }
 
@@ -157,7 +213,13 @@ class CometMarqueeInstance {
   }
 
   pause() {
+    const wasPaused = this.isPaused;
     this.isPaused = true;
+
+    if (!wasPaused) {
+      this.dispatchEvent('animation-paused');
+    }
+
     if (this.options.syncPause && window.__allCometMarqueeInstances) {
       window.__allCometMarqueeInstances.forEach(inst => {
         if (inst !== this) {
@@ -173,12 +235,16 @@ class CometMarqueeInstance {
       this.stop();
       return;
     }
+
+    const wasPaused = this.isPaused;
     if (this.isPaused) {
       this.isPaused = false;
       this.lastTime = performance.now();
       if (!this.isAnimating) {
         this.isAnimating = true;
         this.startAnimation();
+      } else if (wasPaused) {
+        this.dispatchEvent('animation-resumed');
       }
     }
 
@@ -200,18 +266,29 @@ class CometMarqueeInstance {
   }
 
   stop() {
+    const wasAnimating = this.isAnimating;
     this.isAnimating = false;
     if (this.animationId) cancelAnimationFrame(this.animationId);
     this.animationId = null;
+
+    if (wasAnimating) {
+      this.dispatchEvent('animation-stopped');
+    }
   }
 
   refresh() {
+    this.dispatchEvent('refresh-start');
+
     this.stop();
     this.items = Array.from(this.content.children).filter(c => !c.classList.contains('comet-marquee-clone'));
     this.init();
+
+    this.dispatchEvent('refresh-complete');
   }
 
   bindEvents() {
+    this.dispatchEvent('events-bound');
+
     const setupAdaptivePause = () => {
       const desktop = window.innerWidth >= 1024;
       this.container.removeEventListener('mouseenter', this._hoverPause);
@@ -220,17 +297,32 @@ class CometMarqueeInstance {
       document.removeEventListener('click', this._documentClick);
 
       if (desktop) {
-        this._hoverPause = () => this.pause();
-        this._hoverResume = () => this.resume();
+        this._hoverPause = () => {
+          this.dispatchEvent('hover-pause');
+          this.pause();
+        };
+        this._hoverResume = () => {
+          this.dispatchEvent('hover-resume');
+          this.resume();
+        };
         this.container.addEventListener('mouseenter', this._hoverPause);
         this.container.addEventListener('mouseleave', this._hoverResume);
       } else {
         this._clickToggle = (e) => {
           e.stopPropagation();
-          this.isPaused ? this.resume() : this.pause();
+          if (this.isPaused) {
+            this.dispatchEvent('click-resume');
+            this.resume();
+          } else {
+            this.dispatchEvent('click-pause');
+            this.pause();
+          }
         };
         this._documentClick = (e) => {
-          if (!this.container.contains(e.target) && this.isPaused) this.resume();
+          if (!this.container.contains(e.target) && this.isPaused) {
+            this.dispatchEvent('outside-click-resume');
+            this.resume();
+          }
         };
         this.container.addEventListener('click', this._clickToggle);
         document.addEventListener('click', this._documentClick);
@@ -239,22 +331,40 @@ class CometMarqueeInstance {
 
     if (this.options.adaptivePause) {
       setupAdaptivePause();
-      this._resizeHandler = () => setupAdaptivePause();
+      this._resizeHandler = () => {
+        this.dispatchEvent('adaptive-pause-resize');
+        setupAdaptivePause();
+      };
       window.addEventListener('resize', this._resizeHandler);
     } else {
       if (this.options.pauseOnHover) {
-        this._hoverPause = () => this.pause();
-        this._hoverResume = () => this.resume();
+        this._hoverPause = () => {
+          this.dispatchEvent('hover-pause');
+          this.pause();
+        };
+        this._hoverResume = () => {
+          this.dispatchEvent('hover-resume');
+          this.resume();
+        };
         this.container.addEventListener('mouseenter', this._hoverPause);
         this.container.addEventListener('mouseleave', this._hoverResume);
       }
       if (this.options.pauseOnClick) {
         this._clickToggle = (e) => {
           e.stopPropagation();
-          this.isPaused ? this.resume() : this.pause();
+          if (this.isPaused) {
+            this.dispatchEvent('click-resume');
+            this.resume();
+          } else {
+            this.dispatchEvent('click-pause');
+            this.pause();
+          }
         };
         this._documentClick = (e) => {
-          if (!this.container.contains(e.target) && this.isPaused) this.resume();
+          if (!this.container.contains(e.target) && this.isPaused) {
+            this.dispatchEvent('outside-click-resume');
+            this.resume();
+          }
         };
         this.container.addEventListener('click', this._clickToggle);
         document.addEventListener('click', this._documentClick);
@@ -265,8 +375,10 @@ class CometMarqueeInstance {
       this.io = new IntersectionObserver(entries => {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
+            this.dispatchEvent('visibility-resume');
             this.resume();
           } else {
+            this.dispatchEvent('visibility-pause');
             this.pause();
           }
         });
@@ -274,23 +386,37 @@ class CometMarqueeInstance {
       this.io.observe(this.container);
     }
 
-    this.ro = new ResizeObserver(() => this.refresh());
+    this.ro = new ResizeObserver(() => {
+      this.dispatchEvent('container-resized');
+      this.refresh();
+    });
     this.ro.observe(this.container);
 
     window.addEventListener('orientationchange', () => {
+      this.dispatchEvent('orientation-change');
       setTimeout(() => this.refresh(), 100);
     });
 
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
+        this.dispatchEvent('document-visible');
         this.resume();
       } else if (this.options.pauseOnInvisible) {
+        this.dispatchEvent('document-hidden');
         this.pause();
       }
     });
 
     const mql = window.matchMedia('(prefers-reduced-motion: reduce)');
-    this._motionChangeHandler = () => mql.matches ? this.pause() : this.resume();
+    this._motionChangeHandler = () => {
+      if (mql.matches) {
+        this.dispatchEvent('reduced-motion-on');
+        this.pause();
+      } else {
+        this.dispatchEvent('reduced-motion-off');
+        this.resume();
+      }
+    };
     if (mql.matches) this.pause();
     if (mql.addEventListener) {
       mql.addEventListener('change', this._motionChangeHandler);
@@ -298,6 +424,8 @@ class CometMarqueeInstance {
   }
 
   addItem(itemHtml) {
+    this.dispatchEvent('item-adding', { itemHtml });
+
     const temp = document.createElement('div');
     temp.innerHTML = itemHtml;
     const newItem = temp.firstElementChild;
@@ -307,17 +435,27 @@ class CometMarqueeInstance {
     else this.content.appendChild(newItem);
 
     this.refresh();
+
+    this.dispatchEvent('item-added', { newItem });
   }
 
   removeItem() {
     const originals = Array.from(this.content.children).filter(c => !c.classList.contains('comet-marquee-clone'));
     if (originals.length > 0) {
-      originals[originals.length - 1].remove();
+      const removedItem = originals[originals.length - 1];
+
+      this.dispatchEvent('item-removing', { removedItem });
+
+      removedItem.remove();
       this.refresh();
+
+      this.dispatchEvent('item-removed');
     }
   }
 
   destroy() {
+    this.dispatchEvent('destroy-start');
+
     this.stop();
 
     if (window.__allCometMarqueeInstances) {
@@ -341,5 +479,7 @@ class CometMarqueeInstance {
     if (mql.removeEventListener) {
       mql.removeEventListener('change', this._motionChangeHandler);
     }
+
+    this.dispatchEvent('destroy-complete');
   }
 }

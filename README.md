@@ -21,12 +21,12 @@ import 'comet-marquee/dist/comet-marquee.css';
 
 ```html
 <div class="comet-marquee-container">
-  <div class="comet-marquee-content">
-    <div class="comet-marquee-item">Item 1</div>
-    <div class="comet-marquee-item">Item 2</div>
-    <div class="comet-marquee-item">Item 3</div>
-    <!-- Optional: more items -->
-  </div>
+    <div class="comet-marquee-content">
+        <div class="comet-marquee-item">Item 1</div>
+        <div class="comet-marquee-item">Item 2</div>
+        <div class="comet-marquee-item">Item 3</div>
+        <!-- Optional: more items -->
+    </div>
 </div>
 ```
 
@@ -45,7 +45,8 @@ const marquee = new CometMarquee('.comet-marquee-container', {
   initialShift: true,       // start with content shifted by container width
   pauseOnInvisible: true,   // pause when marquee is not visible
   syncPause: true,          // synchronize pause across all marquee instances
-  repeatCount: 3            // number of content repetitions for smooth animation
+  repeatCount: 3,           // number of content repetitions for smooth animation
+  develop: false            // enable debug console logging
 });
 
 // Control methods
@@ -74,6 +75,7 @@ marquee.removeItem(); // removes last original item
 | `pauseOnInvisible` | boolean | false | Pause animation when marquee is not visible in viewport (uses IntersectionObserver) |
 | `syncPause` | boolean | false | Synchronize pause/resume across all CometMarquee instances on the page |
 | `repeatCount` | number | 3 | Number of content repetitions for seamless scrolling. Increase for short content, decrease for performance with many items |
+| `develop` | boolean | false | Enable debug console logging for all events |
 
 ## Methods
 
@@ -88,6 +90,112 @@ marquee.removeItem(); // removes last original item
 | `removeItem()` | Remove the last original item (not clones) |
 | `destroy()` | Clean up all event listeners, observers, and animation frames |
 
+## Event System
+
+CometMarquee dispatches custom events throughout its lifecycle, allowing you to hook into different stages of the marquee operation. All events are dispatched on the container element with the prefix `comet-marquee:`.
+
+### Event Usage
+
+```javascript
+const container = document.querySelector('.comet-marquee-container');
+
+// Listen to specific events
+container.addEventListener('comet-marquee:animation-started', (e) => {
+  console.log('Marquee animation started', e.detail);
+});
+
+container.addEventListener('comet-marquee:animation-cycle', (e) => {
+  console.log('Animation completed a cycle', e.detail.direction);
+});
+
+container.addEventListener('comet-marquee:hover-pause', (e) => {
+  console.log('Marquee paused on hover', e.detail.instance);
+});
+```
+
+### Available Events
+
+#### Lifecycle Events
+| Event | Description | Detail Properties |
+|-------|-------------|------------------|
+| `init-start` | Marquee initialization begins | `instance`, `container` |
+| `init-complete` | Marquee initialization completed | `instance`, `container` |
+| `destroy-start` | Marquee destruction begins | `instance`, `container` |
+| `destroy-complete` | Marquee destruction completed | `instance`, `container` |
+
+#### Dimension & Setup Events
+| Event | Description | Detail Properties |
+|-------|-------------|------------------|
+| `dimensions-calculated` | Container and content dimensions calculated | `containerWidth`, `contentWidth`, `shouldAnimate` |
+| `clones-creating` | Content clones creation started | `instance`, `container` |
+| `clones-created` | Content clones created | `cloneCount`, `repeatCount`, `clonedItems` |
+| `content-setup` | Content positioning and width setup completed | `totalWidth`, `initialTranslate` |
+
+#### Animation Events
+| Event | Description | Detail Properties |
+|-------|-------------|------------------|
+| `animation-started` | Animation loop started | `instance`, `container` |
+| `animation-stopped` | Animation loop stopped | `instance`, `container` |
+| `animation-paused` | Animation paused | `instance`, `container` |
+| `animation-resumed` | Animation resumed | `instance`, `container` |
+| `animation-cycle` | Animation completed one full cycle | `direction` ('forward' or 'reverse') |
+| `animation-skipped` | Animation skipped (content fits in container) | `instance`, `container` |
+| `animation-not-needed` | Animation not needed (content doesn't overflow) | `instance`, `container` |
+
+#### Interaction Events
+| Event | Description | Detail Properties |
+|-------|-------------|------------------|
+| `hover-pause` | Paused due to mouse hover | `instance`, `container` |
+| `hover-resume` | Resumed after mouse leave | `instance`, `container` |
+| `click-pause` | Paused due to click | `instance`, `container` |
+| `click-resume` | Resumed due to click | `instance`, `container` |
+| `outside-click-resume` | Resumed due to click outside container | `instance`, `container` |
+
+#### Visibility Events
+| Event | Description | Detail Properties |
+|-------|-------------|------------------|
+| `visibility-pause` | Paused due to becoming invisible | `instance`, `container` |
+| `visibility-resume` | Resumed due to becoming visible | `instance`, `container` |
+| `document-visible` | Document became visible (tab focus) | `instance`, `container` |
+| `document-hidden` | Document became hidden (tab blur) | `instance`, `container` |
+
+#### System Events
+| Event | Description | Detail Properties |
+|-------|-------------|------------------|
+| `container-resized` | Container was resized | `instance`, `container` |
+| `orientation-change` | Device orientation changed | `instance`, `container` |
+| `adaptive-pause-resize` | Adaptive pause behavior recalculated on resize | `instance`, `container` |
+| `reduced-motion-on` | User enabled reduced motion preference | `instance`, `container` |
+| `reduced-motion-off` | User disabled reduced motion preference | `instance`, `container` |
+
+#### Content Management Events
+| Event | Description | Detail Properties |
+|-------|-------------|------------------|
+| `refresh-start` | Content refresh started | `instance`, `container` |
+| `refresh-complete` | Content refresh completed | `instance`, `container` |
+| `item-adding` | New item being added | `itemHtml` |
+| `item-added` | New item added successfully | `newItem` |
+| `item-removing` | Item being removed | `removedItem` |
+| `item-removed` | Item removed successfully | `instance`, `container` |
+| `events-bound` | Event listeners bound to container | `instance`, `container` |
+
+### Event Detail Object
+
+All events include a `detail` object with at minimum:
+- `instance` - The CometMarqueeInstance that triggered the event
+- `container` - The DOM container element
+- Additional properties specific to each event type
+
+### Development Mode
+
+Set `develop: true` in options to enable console logging of all events:
+
+```javascript
+const marquee = new CometMarquee('.marquee', {
+  develop: true  // Will log all events to console
+});
+```
+
 ## Multi-Instance Support
 
 CometMarquee supports multiple instances on the same page:
@@ -97,8 +205,10 @@ CometMarquee supports multiple instances on the same page:
 const marquee1 = new CometMarquee('.marquee-1');
 const marquee2 = new CometMarquee('.marquee-2');
 
-// Or select multiple containers at once
-const marquees = new CometMarquee('.marquee-container'); // selects all matching elements
+// Listen to events from all instances
+document.addEventListener('comet-marquee:animation-started', (e) => {
+  console.log('Any marquee started:', e.detail.container);
+});
 ```
 
 ## Accessibility & Performance Features
@@ -127,6 +237,7 @@ const marquees = new CometMarquee('.marquee-container'); // selects all matching
 - `IntersectionObserver` (for visibility detection)
 - CSS `transform3d` and `will-change`
 - ES6 classes and arrow functions
+- `CustomEvent` (for event system)
 
 **Note:** Tested on Safari 15.6+. Earlier versions may work but are not officially supported.
 
@@ -137,3 +248,4 @@ const marquees = new CometMarquee('.marquee-container'); // selects all matching
 - Event listeners and observers are automatically cleaned up when instances are destroyed
 - All instances are tracked globally for synchronization features
 - Works on both desktop (mouse events) and touch devices (touch events)
+- Comprehensive event system allows deep integration with your application logic
