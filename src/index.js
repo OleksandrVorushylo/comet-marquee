@@ -1,6 +1,6 @@
 import "./style.css";
 
-export class CometMarquee {
+class CometMarquee {
   constructor(selector, options = {}) {
     if (typeof selector === 'string') {
       this.containers = Array.from(document.querySelectorAll(selector));
@@ -46,7 +46,9 @@ class CometMarqueeInstance {
       pauseOnInvisible: !!options.pauseOnInvisible,
       syncPause: !!options.syncPause,
       repeatCount: options.repeatCount ?? 3,
-      develop: !!options.develop
+      develop: !!options.develop,
+      forceAnimation: !!options.forceAnimation,
+      forceAnimationWidth: options.forceAnimationWidth ?? 2
     };
 
     if (!window.__allCometMarqueeInstances) window.__allCometMarqueeInstances = [];
@@ -92,11 +94,45 @@ class CometMarqueeInstance {
     this.contentWidth = this.getTotalWidth();
     this.shouldAnimate = this.contentWidth > this.containerWidth + 1;
 
+    if (this.options.forceAnimation && !this.shouldAnimate) {
+      this.shouldAnimate = true;
+      this.forceAnimationEnabled = true;
+
+      this.dispatchEvent('force-animation-enabled', {
+        originalContentWidth: this.contentWidth,
+        containerWidth: this.containerWidth
+      });
+    } else {
+      this.forceAnimationEnabled = false;
+    }
+
     this.dispatchEvent('dimensions-calculated', {
       containerWidth: this.containerWidth,
       contentWidth: this.contentWidth,
-      shouldAnimate: this.shouldAnimate
+      shouldAnimate: this.shouldAnimate,
+      forceAnimationEnabled: this.forceAnimationEnabled
     });
+  }
+
+  calculateForceAnimationClones() {
+    if (!this.forceAnimationEnabled || !this.items.length) return 0;
+
+    const targetWidth = window.innerWidth * this.options.forceAnimationWidth;
+
+    const singleSetWidth = this.contentWidth;
+
+    const setsNeeded = Math.ceil(targetWidth / singleSetWidth);
+
+    const clonesNeeded = Math.max(0, (setsNeeded - 1) * this.items.length);
+
+    this.dispatchEvent('force-animation-calculated', {
+      targetWidth,
+      singleSetWidth,
+      setsNeeded,
+      clonesNeeded
+    });
+
+    return clonesNeeded;
   }
 
   setupContent() {
@@ -116,26 +152,46 @@ class CometMarqueeInstance {
 
     this.dispatchEvent('clones-creating');
 
-    const repeatCount = Math.max(this.options.repeatCount, Math.ceil((this.containerWidth * this.options.repeatCount) / this.contentWidth));
-    const clonedItems = [];
+    let repeatCount;
+    let clonedItems = [];
 
-    for (let r = 0; r < repeatCount; r++) {
-      this.items.forEach(item => {
-        const clone = item.cloneNode(true);
+    if (this.forceAnimationEnabled) {
+      const forceClonesCount = this.calculateForceAnimationClones();
+      repeatCount = Math.ceil(forceClonesCount / this.items.length);
+
+      for (let i = 0; i < forceClonesCount; i++) {
+        const originalIndex = i % this.items.length;
+        const clone = this.items[originalIndex].cloneNode(true);
         clone.classList.add('comet-marquee-clone');
         this.content.appendChild(clone);
         clonedItems.push(clone);
-      });
+      }
+    } else {
+      repeatCount = Math.max(this.options.repeatCount, Math.ceil((this.containerWidth * this.options.repeatCount) / this.contentWidth));
+
+      for (let r = 0; r < repeatCount; r++) {
+        this.items.forEach(item => {
+          const clone = item.cloneNode(true);
+          clone.classList.add('comet-marquee-clone');
+          this.content.appendChild(clone);
+          clonedItems.push(clone);
+        });
+      }
     }
 
     this.dispatchEvent('clones-created', {
       cloneCount: clonedItems.length,
       repeatCount,
-      clonedItems
+      clonedItems,
+      forceAnimationEnabled: this.forceAnimationEnabled
     });
 
-    const totalItems = this.items.length * (repeatCount + 1);
-    this.content.style.width = `${this.contentWidth * (repeatCount + 1) + this.options.gap * (totalItems - 1)}px`;
+    const totalItems = this.items.length + clonedItems.length;
+    const allElements = [...this.items, ...clonedItems];
+    const totalWidthWithClones = allElements.reduce((sum, el) => sum + el.getBoundingClientRect().width, 0) +
+        this.options.gap * (totalItems - 1);
+
+    this.content.style.width = `${totalWidthWithClones}px`;
 
     let shift = 0;
     if (this.options.initialShift === true) {
@@ -145,7 +201,11 @@ class CometMarqueeInstance {
     }
 
     if (this.options.reverse) {
-      this.currentTranslate = -(this.contentWidth * repeatCount) + shift;
+      if (this.forceAnimationEnabled) {
+        this.currentTranslate = -(clonedItems.length / this.items.length * this.contentWidth) + shift;
+      } else {
+        this.currentTranslate = -(this.contentWidth * repeatCount) + shift;
+      }
     } else {
       this.currentTranslate = -shift;
     }
@@ -153,7 +213,8 @@ class CometMarqueeInstance {
 
     this.dispatchEvent('content-setup', {
       totalWidth: this.content.style.width,
-      initialTranslate: this.currentTranslate
+      initialTranslate: this.currentTranslate,
+      forceAnimationEnabled: this.forceAnimationEnabled
     });
   }
 
@@ -483,3 +544,5 @@ class CometMarqueeInstance {
     this.dispatchEvent('destroy-complete');
   }
 }
+
+export default CometMarquee;

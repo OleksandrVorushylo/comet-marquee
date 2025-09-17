@@ -1,4 +1,4 @@
-# 💫 CometMarquee 🚀
+# <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/2604_fe0f/512.gif" alt="☄" width="32" height="32"> CometMarquee <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f680/512.gif" alt="🚀" width="32" height="32">
 
 A lightweight, smooth-scrolling marquee plugin for modern browsers. Allows continuous horizontal scrolling of content with automatic performance optimization and accessibility features.
 
@@ -61,6 +61,8 @@ const marquee = new CometMarquee('.comet-marquee-container', {
   pauseOnInvisible: true,   // pause when marquee is not visible
   syncPause: true,          // synchronize pause across all marquee instances
   repeatCount: 3,           // number of content repetitions for smooth animation
+  forceAnimation: false,    // force animation even if content fits in container
+  forceAnimationWidth: 2,   // multiplier for forced animation width (relative to window width)
   develop: false            // enable debug console logging
 });
 
@@ -90,7 +92,27 @@ marquee.removeItem(); // removes last original item
 | `pauseOnInvisible` | boolean | false | Pause animation when marquee is not visible in viewport (uses IntersectionObserver) |
 | `syncPause` | boolean | false | Synchronize pause/resume across all CometMarquee instances on the page |
 | `repeatCount` | number | 3 | Number of content repetitions for seamless scrolling. Increase for short content, decrease for performance with many items |
+| `forceAnimation` | boolean | false | Force animation even when content fits within container width |
+| `forceAnimationWidth` | number | 2 | Width multiplier (relative to window width) used for forced animation calculations |
 | `develop` | boolean | false | Enable debug console logging for all events |
+
+## Force Animation Feature
+
+The `forceAnimation` option allows you to create scrolling animation even when the content naturally fits within the container. This is useful for design consistency or when you want scrolling effect regardless of content size.
+
+```javascript
+const marquee = new CometMarquee('.marquee', {
+  forceAnimation: true,        // Enable forced animation
+  forceAnimationWidth: 3,      // Use 3x window width for calculations
+  speed: 30                    // Slower speed works well with forced animation
+});
+```
+
+When `forceAnimation` is enabled:
+- The plugin calculates how many clones are needed to fill the target width (`forceAnimationWidth * window.innerWidth`)
+- Animation runs even if original content fits in container
+- Dispatches `force-animation-enabled` and `force-animation-calculated` events
+- Automatically adjusts clone count for optimal performance
 
 ## Methods
 
@@ -126,6 +148,10 @@ container.addEventListener('comet-marquee:animation-cycle', (e) => {
 container.addEventListener('comet-marquee:hover-pause', (e) => {
   console.log('Marquee paused on hover', e.detail.instance);
 });
+
+container.addEventListener('comet-marquee:force-animation-enabled', (e) => {
+  console.log('Force animation activated', e.detail);
+});
 ```
 
 ### Available Events
@@ -141,10 +167,12 @@ container.addEventListener('comet-marquee:hover-pause', (e) => {
 #### Dimension & Setup Events
 | Event | Description | Detail Properties |
 |-------|-------------|------------------|
-| `dimensions-calculated` | Container and content dimensions calculated | `containerWidth`, `contentWidth`, `shouldAnimate` |
+| `dimensions-calculated` | Container and content dimensions calculated | `containerWidth`, `contentWidth`, `shouldAnimate`, `forceAnimationEnabled` |
+| `force-animation-enabled` | Force animation was activated | `originalContentWidth`, `containerWidth` |
+| `force-animation-calculated` | Force animation clone count calculated | `targetWidth`, `singleSetWidth`, `setsNeeded`, `clonesNeeded` |
 | `clones-creating` | Content clones creation started | `instance`, `container` |
-| `clones-created` | Content clones created | `cloneCount`, `repeatCount`, `clonedItems` |
-| `content-setup` | Content positioning and width setup completed | `totalWidth`, `initialTranslate` |
+| `clones-created` | Content clones created | `cloneCount`, `repeatCount`, `clonedItems`, `forceAnimationEnabled` |
+| `content-setup` | Content positioning and width setup completed | `totalWidth`, `initialTranslate`, `forceAnimationEnabled` |
 
 #### Animation Events
 | Event | Description | Detail Properties |
@@ -213,12 +241,15 @@ const marquee = new CometMarquee('.marquee', {
 
 ## Multi-Instance Support
 
-CometMarquee supports multiple instances on the same page:
+CometMarquee supports multiple instances on the same page with global synchronization:
 
 ```javascript
 // Create multiple marquees
-const marquee1 = new CometMarquee('.marquee-1');
-const marquee2 = new CometMarquee('.marquee-2');
+const marquee1 = new CometMarquee('.marquee-1', { syncPause: true });
+const marquee2 = new CometMarquee('.marquee-2', { syncPause: true });
+
+// All instances are tracked globally for synchronization
+console.log(window.__allCometMarqueeInstances); // Array of all instances
 
 // Listen to events from all instances
 document.addEventListener('comet-marquee:animation-started', (e) => {
@@ -233,7 +264,9 @@ document.addEventListener('comet-marquee:animation-started', (e) => {
 - **Tab Visibility**: Pauses when browser tab becomes hidden
 - **Responsive Behavior**: Automatically recalculates on window resize and orientation change
 - **Performance Optimized**: Uses `requestAnimationFrame` and `will-change` CSS property
-- **Smart Content Detection**: Only animates when content width exceeds container width
+- **Smart Content Detection**: Only animates when content width exceeds container width (unless `forceAnimation` is enabled)
+- **Adaptive Interactions**: Desktop hover vs mobile touch behavior with `adaptivePause`
+- **Memory Management**: Proper cleanup of observers, event listeners, and animation frames
 
 ## Browser Support
 
@@ -253,14 +286,69 @@ document.addEventListener('comet-marquee:animation-started', (e) => {
 - CSS `transform3d` and `will-change`
 - ES6 classes and arrow functions
 - `CustomEvent` (for event system)
+- `performance.now()` (for smooth animation timing)
 
 **Note:** Tested on Safari 15.6+. Earlier versions may work but are not officially supported.
+
+## Advanced Usage Examples
+
+### Synchronized Marquees
+```javascript
+// Create multiple synchronized marquees
+const marquee1 = new CometMarquee('.marquee-1', {
+  syncPause: true,
+  speed: 50
+});
+
+const marquee2 = new CometMarquee('.marquee-2', {
+  syncPause: true,
+  speed: 50,
+  reverse: true  // Opposite direction
+});
+```
+
+### Responsive Marquee with Force Animation
+```javascript
+const marquee = new CometMarquee('.marquee', {
+  forceAnimation: true,
+  forceAnimationWidth: 1.5,
+  adaptivePause: true,
+  pauseOnInvisible: true,
+  develop: process.env.NODE_ENV === 'development'
+});
+
+// Listen for force animation events
+marquee.containers[0].addEventListener('comet-marquee:force-animation-enabled', (e) => {
+  console.log('Animation forced:', e.detail.originalContentWidth, 'px content in', e.detail.containerWidth, 'px container');
+});
+```
+
+### Dynamic Content Management
+```javascript
+const marquee = new CometMarquee('.news-ticker', {
+  speed: 40,
+  pauseOnHover: true
+});
+
+// Add breaking news
+function addBreakingNews(newsText) {
+  const newsHtml = `<div class="comet-marquee-item breaking-news">${newsText}</div>`;
+  marquee.addItem(newsHtml);
+}
+
+// Remove old news
+function removeOldNews() {
+  marquee.removeItem();
+}
+```
 
 ## Notes
 
 - Content clones are automatically created and managed for seamless infinite scrolling
 - The plugin automatically calculates optimal number of repetitions based on content and container size
 - Event listeners and observers are automatically cleaned up when instances are destroyed
-- All instances are tracked globally for synchronization features
+- All instances are tracked globally in `window.__allCometMarqueeInstances` for synchronization features
 - Works on both desktop (mouse events) and touch devices (touch events)
 - Comprehensive event system allows deep integration with your application logic
+- Force animation feature enables consistent scrolling behavior regardless of content size
+- Performance optimized with proper frame timing and GPU acceleration via `transform3d`
