@@ -48,7 +48,8 @@ class CometMarqueeInstance {
       repeatCount: options.repeatCount ?? 3,
       develop: !!options.develop,
       forceAnimation: !!options.forceAnimation,
-      forceAnimationWidth: options.forceAnimationWidth ?? 2
+      forceAnimationWidth: options.forceAnimationWidth ?? 2,
+      fadeEdges: options.fadeEdges ?? false
     };
 
     if (!window.__allCometMarqueeInstances) window.__allCometMarqueeInstances = [];
@@ -133,6 +134,41 @@ class CometMarqueeInstance {
     });
 
     return clonesNeeded;
+  }
+
+  applyFadeEdges() {
+    const { fadeEdges } = this.options;
+
+    if (fadeEdges === false) {
+      this.container.classList.remove('is-fade-edges');
+      this.dispatchEvent('fade-edges-removed');
+      return;
+    }
+
+    if (fadeEdges === true) {
+      this.container.classList.add('is-fade-edges');
+      this.dispatchEvent('fade-edges-applied', { condition: 'always' });
+      return;
+    }
+
+    if (typeof fadeEdges === 'number') {
+      const currentWidth = window.innerWidth;
+      if (currentWidth >= fadeEdges) {
+        this.container.classList.add('is-fade-edges');
+        this.dispatchEvent('fade-edges-applied', {
+          condition: 'breakpoint',
+          breakpoint: fadeEdges,
+          currentWidth
+        });
+      } else {
+        this.container.classList.remove('is-fade-edges');
+        this.dispatchEvent('fade-edges-removed', {
+          condition: 'breakpoint',
+          breakpoint: fadeEdges,
+          currentWidth
+        });
+      }
+    }
   }
 
   setupContent() {
@@ -221,8 +257,11 @@ class CometMarqueeInstance {
   init() {
     this.dispatchEvent('init-start');
 
+    this.container.classList.add('is-init-comet-marquee');
+
     this.calculateDimensions();
     this.setupContent();
+    this.applyFadeEdges();
     this.startAnimation();
 
     this.dispatchEvent('init-complete');
@@ -449,14 +488,23 @@ class CometMarqueeInstance {
 
     this.ro = new ResizeObserver(() => {
       this.dispatchEvent('container-resized');
+      this.applyFadeEdges();
       this.refresh();
     });
     this.ro.observe(this.container);
 
     window.addEventListener('orientationchange', () => {
       this.dispatchEvent('orientation-change');
-      setTimeout(() => this.refresh(), 100);
+      setTimeout(() => {
+        this.applyFadeEdges();
+        this.refresh();
+      }, 100);
     });
+
+    this._fadeEdgesResizeHandler = () => {
+      this.applyFadeEdges();
+    };
+    window.addEventListener('resize', this._fadeEdgesResizeHandler);
 
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
@@ -534,6 +582,7 @@ class CometMarqueeInstance {
     this.container.removeEventListener('click', this._clickToggle);
     document.removeEventListener('click', this._documentClick);
     window.removeEventListener('resize', this._resizeHandler);
+    window.removeEventListener('resize', this._fadeEdgesResizeHandler);
     document.removeEventListener('visibilitychange', this._visibilityHandler);
 
     const mql = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -545,6 +594,7 @@ class CometMarqueeInstance {
   }
 }
 
+export { CometMarquee };
 export default CometMarquee;
 
 if (typeof window !== 'undefined') {

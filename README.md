@@ -21,7 +21,13 @@ pnpm add comet-marquee
 ```
 
 ```javascript
+// Default import
+import CometMarquee from 'comet-marquee';
+
+// Or named import (if supported)
 import { CometMarquee } from 'comet-marquee';
+
+// CSS
 import 'comet-marquee/dist/comet-marquee.css';
 ```
 
@@ -63,7 +69,8 @@ const marquee = new CometMarquee('.comet-marquee-container', {
   repeatCount: 3,           // number of content repetitions for smooth animation
   forceAnimation: false,    // force animation even if content fits in container
   forceAnimationWidth: 2,   // multiplier for forced animation width (relative to window width)
-  develop: false            // enable debug console logging
+  develop: false,            // enable debug console logging
+  fadeEdges: false            // enables fade blurring at the edges
 });
 
 // Control methods
@@ -80,21 +87,22 @@ marquee.removeItem(); // removes last original item
 
 ## Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `speed` | number | 50 | Scrolling speed in pixels per second |
-| `gap` | number | CSS gap | Space between items in pixels (auto-detected from CSS if not specified) |
-| `pauseOnHover` | boolean | false | Pause marquee on mouse hover |
-| `pauseOnClick` | boolean | false | Pause/resume marquee on click, resume on click outside container |
-| `adaptivePause` | boolean | false | Automatically use hover behavior on desktop (≥1024px) and click behavior on mobile (<1024px) |
-| `reverse` | boolean | false | Reverse scrolling direction (right to left becomes left to right) |
-| `initialShift` | boolean/number | false | Initial content offset: `true` shifts by container width, number shifts by specified pixels |
-| `pauseOnInvisible` | boolean | false | Pause animation when marquee is not visible in viewport (uses IntersectionObserver) |
-| `syncPause` | boolean | false | Synchronize pause/resume across all CometMarquee instances on the page |
+| Option | Type | Default | Description                                                                                                                |
+|--------|------|---------|----------------------------------------------------------------------------------------------------------------------------|
+| `speed` | number | 50 | Scrolling speed in pixels per second                                                                                       |
+| `gap` | number | CSS gap | Space between items in pixels (auto-detected from CSS if not specified)                                                    |
+| `pauseOnHover` | boolean | false | Pause marquee on mouse hover                                                                                               |
+| `pauseOnClick` | boolean | false | Pause/resume marquee on click, resume on click outside container                                                           |
+| `adaptivePause` | boolean | false | Automatically use hover behavior on desktop (≥1024px) and click behavior on mobile (<1024px)                               |
+| `reverse` | boolean | false | Reverse scrolling direction (right to left becomes left to right)                                                          |
+| `initialShift` | boolean/number | false | Initial content offset: `true` shifts by container width, number shifts by specified pixels                                |
+| `pauseOnInvisible` | boolean | false | Pause animation when marquee is not visible in viewport (uses IntersectionObserver)                                        |
+| `syncPause` | boolean | false | Synchronize pause/resume across all CometMarquee instances on the page                                                     |
 | `repeatCount` | number | 3 | Number of content repetitions for seamless scrolling. Increase for short content, decrease for performance with many items |
-| `forceAnimation` | boolean | false | Force animation even when content fits within container width |
-| `forceAnimationWidth` | number | 2 | Width multiplier (relative to window width) used for forced animation calculations |
-| `develop` | boolean | false | Enable debug console logging for all events |
+| `forceAnimation` | boolean | false | Force animation even when content fits within container width                                                              |
+| `forceAnimationWidth` | number | 2 | Width multiplier (relative to window width) used for forced animation calculations                                         |
+| `develop` | boolean | false | Enable debug console logging for all events                                                                                |
+| `fadeEdges` | boolean/number | false | Eenables fade blurring at the edges. If true, then it will always blur, if for example 1900, then it will blur starting from 1900px (for cases when you need to blur at high resolutions)                                                                                      |
 
 ## Force Animation Feature
 
