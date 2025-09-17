@@ -546,3 +546,11 @@ class CometMarqueeInstance {
 }
 
 export default CometMarquee;
+
+if (typeof window !== 'undefined') {
+  if (window.cometMarquee && window.cometMarquee.CometMarquee) {
+    window.CometMarquee = window.cometMarquee.CometMarquee;
+  } else {
+    window.CometMarquee = CometMarquee;
+  }
+}
