@@ -177,15 +177,20 @@ class CometMarqueeInstance {
     /** @type {Function|null} */
     this._fadeEdgesResizeHandler = null;
     /** @type {Function|null} */
-    this._visibilityHandler = null; // This was not used, but added for completeness if it were.
+    this._visibilityHandler = null;
     /** @type {Function|null} */
     this._motionChangeHandler = null;
     /** @type {boolean} */
     this.forceAnimationEnabled = false;
 
-    // Added Logic: track previous container width to avoid infinite loops
+    // CRITICAL: Multiple layers of loop prevention
     this.lastContainerRectWidth = 0;
+    this.lastWindowWidth = window.innerWidth;
     this.refreshTimeout = null;
+    this.isRefreshing = false;
+    this.isInitializing = false;
+    this.resizeObserverCallCount = 0;
+    this.lastResizeTimestamp = 0;
 
     this.init();
     this.bindEvents();
@@ -209,7 +214,7 @@ class CometMarqueeInstance {
     this.container.dispatchEvent(event);
 
     if (this.options.develop) {
-      console.log(`[CometMarquee] ${eventName}`, detail);
+      console.log(`[CometMarquee #${this.idx}] ${eventName}`, detail);
     }
   }
 
@@ -229,7 +234,6 @@ class CometMarqueeInstance {
   calculateDimensions() {
     this.containerWidth = this.container.getBoundingClientRect().width;
     this.contentWidth = this.getTotalWidth();
-    // Use Math.ceil or tolerance to avoid float precision issues during loops
     this.shouldAnimate = this.contentWidth > this.containerWidth + 1;
 
     if (this.options.forceAnimation && !this.shouldAnimate) {
@@ -254,33 +258,47 @@ class CometMarqueeInstance {
 
   /**
    * Calculates the number of clones needed for force animation based on target width.
-   * Dispatches 'force-animation-calculated' event.
+   * Uses a MAXIMUM CAP to prevent memory issues.
    * @returns {number} The number of clones needed.
    */
   calculateForceAnimationClones() {
     if (!this.forceAnimationEnabled || !this.items.length) return 0;
 
     const targetWidth = window.innerWidth * this.options.forceAnimationWidth;
-
     const singleSetWidth = this.contentWidth;
 
-    const setsNeeded = Math.ceil(targetWidth / singleSetWidth);
+    // CRITICAL FIX: Cap the number of sets to prevent infinite cloning
+    const maxSets = 20; // Maximum 20 sets regardless of calculation
+    const setsNeeded = Math.min(
+        Math.ceil(targetWidth / singleSetWidth),
+        maxSets
+    );
 
     const clonesNeeded = Math.max(0, (setsNeeded - 1) * this.items.length);
+
+    // CRITICAL FIX: Absolute maximum on clone count
+    const maxClones = 100; // Hard limit - максимум 100 клонов
+    const cappedClones = Math.min(clonesNeeded, maxClones);
+
+    if (cappedClones < clonesNeeded && this.options.develop) {
+      console.warn(
+          `[CometMarquee #${this.idx}] Clone count capped at ${maxClones} (would be ${clonesNeeded})`
+      );
+    }
 
     this.dispatchEvent('force-animation-calculated', {
       targetWidth,
       singleSetWidth,
       setsNeeded,
-      clonesNeeded
+      clonesNeeded: cappedClones,
+      cappedFromOriginal: clonesNeeded
     });
 
-    return clonesNeeded;
+    return cappedClones;
   }
 
   /**
    * Applies or removes fade edge styling based on `fadeEdges` option and window width.
-   * Dispatches 'fade-edges-applied' or 'fade-edges-removed' events.
    */
   applyFadeEdges() {
     const { fadeEdges } = this.options;
@@ -319,7 +337,6 @@ class CometMarqueeInstance {
 
   /**
    * Sets up the content for animation, including cloning items and setting initial translation.
-   * Dispatches 'clones-creating', 'clones-created', 'animation-not-needed', and 'content-setup' events.
    */
   setupContent() {
     this.content.style.willChange = 'transform';
@@ -345,30 +362,43 @@ class CometMarqueeInstance {
       const forceClonesCount = this.calculateForceAnimationClones();
       repeatCount = Math.ceil(forceClonesCount / this.items.length);
 
+      // Use DocumentFragment for better performance
+      const fragment = document.createDocumentFragment();
+
       for (let i = 0; i < forceClonesCount; i++) {
         const originalIndex = i % this.items.length;
         const clone = this.items[originalIndex].cloneNode(true);
         clone.classList.add('comet-marquee-clone');
-        this.content.appendChild(clone);
+        fragment.appendChild(clone);
         clonedItems.push(clone);
       }
+
+      // Single DOM append
+      this.content.appendChild(fragment);
+
     } else {
-      repeatCount = Math.max(this.options.repeatCount, Math.ceil((this.containerWidth * this.options.repeatCount) / this.contentWidth));
+      repeatCount = Math.max(
+          this.options.repeatCount,
+          Math.ceil((this.containerWidth * this.options.repeatCount) / this.contentWidth)
+      );
+
+      const fragment = document.createDocumentFragment();
 
       for (let r = 0; r < repeatCount; r++) {
         this.items.forEach(item => {
           const clone = item.cloneNode(true);
           clone.classList.add('comet-marquee-clone');
-          this.content.appendChild(clone);
+          fragment.appendChild(clone);
           clonedItems.push(clone);
         });
       }
+
+      this.content.appendChild(fragment);
     }
 
     this.dispatchEvent('clones-created', {
       cloneCount: clonedItems.length,
       repeatCount,
-      clonedItems,
       forceAnimationEnabled: this.forceAnimationEnabled
     });
 
@@ -405,10 +435,10 @@ class CometMarqueeInstance {
   }
 
   /**
-   * Initializes the marquee instance by calculating dimensions, setting up content, applying fade edges, and starting animation.
-   * Dispatches 'init-start' and 'init-complete' events.
+   * Initializes the marquee instance.
    */
   init() {
+    this.isInitializing = true;
     this.dispatchEvent('init-start');
 
     this.container.classList.add('is-init-comet-marquee');
@@ -419,11 +449,15 @@ class CometMarqueeInstance {
     this.startAnimation();
 
     this.dispatchEvent('init-complete');
+
+    // Clear initializing flag after a delay
+    setTimeout(() => {
+      this.isInitializing = false;
+    }, 300);
   }
 
   /**
    * Starts or restarts the marquee animation.
-   * Dispatches 'animation-skipped' and 'animation-started' events.
    */
   startAnimation() {
     if (!this.shouldAnimate) {
@@ -443,7 +477,6 @@ class CometMarqueeInstance {
 
   /**
    * The animation loop function, called by requestAnimationFrame.
-   * @param {DOMHighResTimeStamp} currentTime - The current time provided by requestAnimationFrame.
    * @private
    */
   animate = (currentTime) => {
@@ -476,8 +509,7 @@ class CometMarqueeInstance {
   }
 
   /**
-   * Pauses the marquee animation. If `syncPause` is enabled, pauses all other instances.
-   * Dispatches 'animation-paused' event.
+   * Pauses the marquee animation.
    */
   pause() {
     const wasPaused = this.isPaused;
@@ -497,8 +529,7 @@ class CometMarqueeInstance {
   }
 
   /**
-   * Resumes the marquee animation. If `syncPause` is enabled, resumes all other instances.
-   * Dispatches 'animation-resumed' event.
+   * Resumes the marquee animation.
    */
   resume() {
     this.calculateDimensions();
@@ -537,8 +568,7 @@ class CometMarqueeInstance {
   }
 
   /**
-   * Stops the marquee animation completely and cancels animation frames.
-   * Dispatches 'animation-stopped' event.
+   * Stops the marquee animation completely.
    */
   stop() {
     const wasAnimating = this.isAnimating;
@@ -553,9 +583,17 @@ class CometMarqueeInstance {
 
   /**
    * Recalculates dimensions, rebuilds clones, and restarts the animation.
-   * Dispatches 'refresh-start' and 'refresh-complete' events.
    */
   refresh() {
+    // CRITICAL: Prevent refresh loops
+    if (this.isRefreshing || this.isInitializing) {
+      if (this.options.develop) {
+        console.warn(`[CometMarquee #${this.idx}] Refresh blocked - already in progress`);
+      }
+      return;
+    }
+
+    this.isRefreshing = true;
     this.dispatchEvent('refresh-start');
 
     this.stop();
@@ -563,11 +601,17 @@ class CometMarqueeInstance {
     this.init();
 
     this.dispatchEvent('refresh-complete');
+
+    setTimeout(() => {
+      this.isRefreshing = false;
+      if (this.options.develop) {
+        console.log(`[CometMarquee #${this.idx}] Refresh guard cleared`);
+      }
+    }, 500); // Increased to 500ms for maximum stability
   }
 
   /**
-   * Binds all necessary event listeners for interaction, visibility, and responsiveness.
-   * Dispatches 'events-bound' event.
+   * Binds all necessary event listeners.
    * @private
    */
   bindEvents() {
@@ -670,37 +714,97 @@ class CometMarqueeInstance {
       this.io.observe(this.container);
     }
 
+    // CRITICAL FIX: Multi-layer ResizeObserver protection
     this.ro = new ResizeObserver((entries) => {
-      // FIX: Check if width actually changed to prevent infinite loop
-      // Because refresh() changes DOM -> potential small size change -> RO loop
-      let hasWidthChanged = false;
+      const now = performance.now();
+      this.resizeObserverCallCount++;
 
-      for (const entry of entries) {
-        // Use Math.round to ignore sub-pixel differences that can cause loops
-        const currentWidth = Math.round(entry.contentRect.width);
-
-        // Initialize lastContainerRectWidth if it's 0 (first run)
-        if (this.lastContainerRectWidth === 0) {
-          this.lastContainerRectWidth = currentWidth;
-          // Don't return here, proceed to logic but maybe skip refresh?
-          // Actually first run usually needs setup.
-        } else if (currentWidth !== this.lastContainerRectWidth) {
-          this.lastContainerRectWidth = currentWidth;
-          hasWidthChanged = true;
+      // Layer 1: Block during refresh/init
+      if (this.isRefreshing || this.isInitializing) {
+        if (this.options.develop) {
+          console.log(`[CometMarquee #${this.idx}] RO blocked - refreshing/initializing`);
         }
+        return;
       }
 
-      if (!hasWidthChanged) return;
+      // Layer 2: Detect rapid-fire calls (likely a loop)
+      const timeSinceLastResize = now - this.lastResizeTimestamp;
+      if (timeSinceLastResize < 50) { // Less than 50ms = suspicious
+        if (this.options.develop) {
+          console.warn(`[CometMarquee #${this.idx}] RO call too rapid (${timeSinceLastResize.toFixed(1)}ms) - ignoring`);
+        }
+        return;
+      }
+      this.lastResizeTimestamp = now;
+
+      // Layer 3: Detect excessive calls
+      if (this.resizeObserverCallCount > 100) {
+        console.error(`[CometMarquee #${this.idx}] ResizeObserver loop detected! Disconnecting to prevent crash.`);
+        this.ro.disconnect();
+        return;
+      }
+
+      // Layer 4: Check window width change (real resize vs internal)
+      const currentWindowWidth = window.innerWidth;
+      const windowWidthChanged = currentWindowWidth !== this.lastWindowWidth;
+
+      // Layer 5: Check container width change
+      let hasContainerWidthChanged = false;
+      for (const entry of entries) {
+        const currentWidth = Math.round(entry.contentRect.width);
+
+        if (this.lastContainerRectWidth === 0) {
+          this.lastContainerRectWidth = currentWidth;
+          if (this.options.develop) {
+            console.log(`[CometMarquee #${this.idx}] Initial width: ${currentWidth}px`);
+          }
+          return; // First call - don't refresh
+        }
+
+        const widthDiff = Math.abs(currentWidth - this.lastContainerRectWidth);
+
+        // Layer 6: Ignore micro-changes
+        if (widthDiff < 5) { // Increased threshold to 5px
+          if (this.options.develop) {
+            console.log(`[CometMarquee #${this.idx}] Width change too small (${widthDiff}px) - ignoring`);
+          }
+          return;
+        }
+
+        // Layer 7: Only process if window actually resized OR container changed significantly
+        if (!windowWidthChanged && widthDiff < 10) {
+          if (this.options.develop) {
+            console.log(`[CometMarquee #${this.idx}] Internal width change without window resize - ignoring`);
+          }
+          return;
+        }
+
+        if (this.options.develop) {
+          console.log(`[CometMarquee #${this.idx}] Width: ${this.lastContainerRectWidth}px → ${currentWidth}px (window: ${windowWidthChanged})`);
+        }
+
+        this.lastContainerRectWidth = currentWidth;
+        hasContainerWidthChanged = true;
+      }
+
+      if (!hasContainerWidthChanged && !windowWidthChanged) {
+        return;
+      }
+
+      // Update window width tracker
+      this.lastWindowWidth = currentWindowWidth;
 
       this.dispatchEvent('container-resized');
       this.applyFadeEdges();
 
-      // Debounce refresh
+      // Layer 8: Aggressive debounce
       if (this._refreshTimeout) clearTimeout(this._refreshTimeout);
       this._refreshTimeout = setTimeout(() => {
+        this.resizeObserverCallCount = 0; // Reset counter
         this.refresh();
-      }, 100);
+      }, 300); // Increased to 300ms
     });
+
     this.ro.observe(this.container);
 
     window.addEventListener('orientationchange', () => {
@@ -708,7 +812,7 @@ class CometMarqueeInstance {
       setTimeout(() => {
         this.applyFadeEdges();
         this.refresh();
-      }, 100);
+      }, 200);
     });
 
     this._fadeEdgesResizeHandler = () => {
@@ -744,8 +848,6 @@ class CometMarqueeInstance {
 
   /**
    * Adds a new item to the marquee.
-   * @param {string} itemHtml - The HTML string of the item to add.
-   * Dispatches 'item-adding' and 'item-added' events.
    */
   addItem(itemHtml) {
     this.dispatchEvent('item-adding', { itemHtml });
@@ -765,7 +867,6 @@ class CometMarqueeInstance {
 
   /**
    * Removes the last original item from the marquee.
-   * Dispatches 'item-removing' and 'item-removed' events.
    */
   removeItem() {
     const originals = Array.from(this.content.children).filter(c => !c.classList.contains('comet-marquee-clone'));
@@ -782,8 +883,7 @@ class CometMarqueeInstance {
   }
 
   /**
-   * Destroys the marquee instance, cleaning up all event listeners, observers, and animation frames.
-   * Dispatches 'destroy-start' and 'destroy-complete' events.
+   * Destroys the marquee instance.
    */
   destroy() {
     this.dispatchEvent('destroy-start');
