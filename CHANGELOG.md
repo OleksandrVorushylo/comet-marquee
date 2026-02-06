@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.30] - 2026-02-06
+### Added
+- **Browser Support**: Documentation table with minimum browser versions (including Safari 15.6+).
+- **Live Demo Link**: Prominent badge and link to demo in `README.md`.
+
+### Fixed
+- **GitHub Pages Demo**: Fixed vertical marquee visibility by ensuring library CSS is correctly loaded in docs.
+
 ## [Unreleased]
 
 ### Added
