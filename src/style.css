@@ -10,7 +10,6 @@
   width: 100%;
   max-width: 100%;
   padding: 1px;
-  overflow: hidden;
 }
 
 /* Horizontal fade edges */
@@ -50,6 +49,7 @@
 .comet-marquee-container[data-vertical] {
   width: auto;
   height: var(--comet-marquee-height);
+  overflow: hidden;
 }
 
 .comet-marquee-container[data-vertical] .comet-marquee-content {
