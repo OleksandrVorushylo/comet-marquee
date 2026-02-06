@@ -1,12 +1,13 @@
 # <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/2604_fe0f/512.gif" alt="☄" width="32" height="32"> CometMarquee <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f680/512.gif" alt="🚀" width="32" height="32">
 
-A lightweight, smooth-scrolling marquee plugin for modern browsers. Allows continuous horizontal scrolling of content with automatic performance optimization and accessibility features.
+A lightweight, smooth-scrolling marquee plugin for modern browsers. Allows continuous horizontal scrolling of content with automatic performance optimization and accessibility features. [**Check out the Live Demo**](https://oleksandrvorushylo.github.io/comet-marquee/)
 
 ---
 
 [![npm](https://img.shields.io/npm/v/comet-marquee?style=flat&logo=npm)](https://www.npmjs.com/package/comet-marquee)
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=flat&logo=github&logoColor=white)](https://github.com/OleksandrVorushylo/comet-marquee)
 [![unpkg](https://img.shields.io/badge/unpkg-CDN-blue?logo=unpkg)](https://unpkg.com/comet-marquee)
+[![Demo](https://img.shields.io/badge/Demo-Live%20Example-blue?style=flat&logo=github-pages&logoColor=white)](https://oleksandrvorushylo.github.io/comet-marquee/)
 
 ---
 
@@ -285,9 +286,9 @@ document.addEventListener('comet-marquee:animation-started', (e) => {
 |---------|-----------------|
 | Chrome | 64+ |
 | Firefox | 69+ |
-| Safari | 14+ |
+| Safari | 15.6+ |
 | Edge | 79+ |
-| iOS Safari | 14+ |
+| iOS Safari | 15.6+ |
 | Android Chrome | 64+ |
 
 **Required APIs:**
@@ -380,6 +381,8 @@ function removeOldNews() {
   marquee.removeItem();
 }
 ```
+
+
 
 ## Notes
 
