@@ -20,7 +20,7 @@
 	"author": "Oleksandr Vorushylo || Rhaegar259",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/OleksandrVorushylo/comet-marquee.git"
+		"url": "git+https://github.com/OleksandrVorushylo/comet-marquee.git"
 	},
 	"license": "MIT",
 	"devDependencies": {
