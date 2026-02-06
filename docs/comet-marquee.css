@@ -1,0 +1,54 @@
+:root {
+    --comet-marquee-gap: 20px;
+    --comet-marquee-fade-distance: 100px;
+    --comet-marquee-fade-rgba-start: transparent;
+    --comet-marquee-fade-rgba-end: #000;
+    --comet-marquee-height: 500px
+}
+
+.comet-marquee-container {
+    max-width: 100%;
+    overflow: hidden;
+    padding: 1px;
+    width: 100%
+}
+
+.comet-marquee-container.is-fade-edges {
+    -webkit-mask-composite: destination-in;
+    mask-composite: intersect;
+    -webkit-mask-image: linear-gradient(to right, var(--comet-marquee-fade-rgba-start) 0, var(--comet-marquee-fade-rgba-end) var(--comet-marquee-fade-distance), var(--comet-marquee-fade-rgba-end) calc(100% - var(--comet-marquee-fade-distance)), var(--comet-marquee-fade-rgba-start) 100%);
+    mask-image: linear-gradient(to right, var(--comet-marquee-fade-rgba-start) 0, var(--comet-marquee-fade-rgba-end) var(--comet-marquee-fade-distance), var(--comet-marquee-fade-rgba-end) calc(100% - var(--comet-marquee-fade-distance)), var(--comet-marquee-fade-rgba-start) 100%);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat
+}
+
+.comet-marquee-content {
+    align-items: center;
+    display: flex;
+    gap: var(--comet-marquee-gap);
+    will-change: transform
+}
+
+.comet-marquee-item {
+    align-items: center;
+    display: flex;
+    flex-shrink: 0;
+    justify-content: center
+}
+
+.comet-marquee-container[data-vertical] {
+    height: var(--comet-marquee-height);
+    width: auto
+}
+
+.comet-marquee-container[data-vertical] .comet-marquee-content {
+    align-items: stretch;
+    flex-direction: column
+}
+
+.comet-marquee-container[data-vertical].is-fade-edges {
+    -webkit-mask-image: linear-gradient(to bottom, var(--comet-marquee-fade-rgba-start) 0, var(--comet-marquee-fade-rgba-end) var(--comet-marquee-fade-distance), var(--comet-marquee-fade-rgba-end) calc(100% - var(--comet-marquee-fade-distance)), var(--comet-marquee-fade-rgba-start) 100%);
+    mask-image: linear-gradient(to bottom, var(--comet-marquee-fade-rgba-start) 0, var(--comet-marquee-fade-rgba-end) var(--comet-marquee-fade-distance), var(--comet-marquee-fade-rgba-end) calc(100% - var(--comet-marquee-fade-distance)), var(--comet-marquee-fade-rgba-start) 100%)
+}
+
+/*# sourceMappingURL=comet-marquee.css.map */
