@@ -1,0 +1,865 @@
+:root {
+    --bg-color: #050508;
+    --card-bg: #0f1016;
+    --text-color: #e0e0e0;
+    --neon-blue: #00f3ff;
+    --neon-pink: #bc13fe;
+    --neon-purple: #8a2be2;
+    --neon-cyan: #0affc2;
+    --font-main: 'Rajdhani', sans-serif;
+    --font-display: 'Orbitron', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-main);
+    overflow-x: hidden;
+    min-height: 100vh;
+}
+
+/* Background Stars Effect */
+.stars-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image:
+        radial-gradient(white, rgba(255, 255, 255, .2) 2px, transparent 3px),
+        radial-gradient(white, rgba(255, 255, 255, .15) 1px, transparent 2px),
+        radial-gradient(white, rgba(255, 255, 255, .1) 2px, transparent 3px);
+    background-size: 550px 550px, 350px 350px, 250px 250px;
+    background-position: 0 0, 40px 60px, 130px 270px;
+    z-index: -2;
+    opacity: 0.6;
+}
+
+.grid-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    z-index: -1;
+    perspective: 1000px;
+    transform: perspective(500px) rotateX(60deg) translateY(-100px) scale(2);
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+/* Sections */
+section {
+    position: relative;
+    margin-bottom: 80px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.demo-block {
+    background: rgba(15, 16, 22, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 40px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.demo-block:hover {
+    transform: translateY(-5px);
+    border-color: rgba(0, 243, 255, 0.2);
+}
+
+.block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.tags {
+    display: flex;
+    gap: 10px;
+}
+
+.tag {
+    font-size: 0.8rem;
+    font-family: 'Consolas', monospace;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: #aaa;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+h2 {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.description {
+    color: #888;
+    margin-bottom: 30px;
+    font-size: 1.1rem;
+}
+
+/* 1. Hero Full Width */
+.hero-section {
+    padding-top: 60px;
+    padding-bottom: 80px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 243, 255, 0.05) 50%, rgba(0, 0, 0, 0) 100%);
+    overflow: hidden;
+}
+
+.hero-marquee {
+    font-family: var(--font-display);
+    font-size: 8rem;
+    font-weight: 900;
+    letter-spacing: -2px;
+    color: transparent;
+    -webkit-text-stroke: 2px rgba(255, 255, 255, 0.1);
+    white-space: nowrap;
+    user-select: none;
+    pointer-events: none;
+}
+
+.hero-text.outlined {
+    -webkit-text-stroke: 2px var(--neon-blue);
+    text-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+}
+
+.hero-separator {
+    color: var(--neon-pink);
+    margin: 0 40px;
+    font-size: 4rem;
+    vertical-align: middle;
+}
+
+.hero-content {
+    text-align: center;
+    margin-top: 40px;
+    position: relative;
+    z-index: 10;
+}
+
+.hero-content h1 {
+    font-family: var(--font-display);
+    font-size: 3rem;
+    background: linear-gradient(90deg, #fff, var(--neon-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 15px;
+}
+
+.npm-command {
+    display: inline-flex;
+    align-items: center;
+    background: #1a1b24;
+    padding: 12px 24px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    font-family: 'Consolas', monospace;
+    color: var(--neon-cyan);
+    margin-top: 20px;
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.1);
+}
+
+.copy-btn {
+    background: none;
+    border: none;
+    color: #fff;
+    margin-left: 15px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.copy-btn:hover {
+    opacity: 1;
+}
+
+
+/* 2. Solar System (Cards) */
+.planet-card {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 15px 30px;
+    height: 80px;
+    background: var(--card-bg);
+    border: 1px solid #333;
+    border-radius: 50px;
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: #fff;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    white-space: nowrap;
+    transition: all 0.3s;
+    cursor: default;
+    margin: 10px 0;
+    /* Add margin to prevent shadow clipping */
+}
+
+.planet-card:hover {
+    border-color: var(--neon-blue);
+    box-shadow: 0 0 15px var(--neon-blue);
+}
+
+.planet-marquee {
+    /* Adjust height to accommodate margins */
+    height: 110px !important;
+    display: flex;
+    align-items: center;
+}
+
+/* 3. Space Fleet */
+.ship-card {
+    display: inline-block;
+    padding: 10px 20px;
+    background: rgba(0, 243, 255, 0.05);
+    border: 1px solid rgba(0, 243, 255, 0.2);
+    margin-right: 0;
+    color: var(--neon-cyan);
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    transform: skewX(-15deg);
+}
+
+/* 4. Vertical */
+.vertical-wrapper {
+    display: flex;
+    gap: 20px;
+    height: 400px;
+    justify-content: center;
+}
+
+.vertical-marquee {
+    width: 200px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--neon-pink);
+    border-radius: 8px;
+}
+
+.log-entry {
+    font-family: 'Consolas', monospace;
+    color: var(--neon-pink);
+    padding: 12px;
+    font-size: 0.95rem;
+    border-bottom: 1px dashed rgba(188, 19, 254, 0.2);
+}
+
+.log-entry.warn {
+    color: #ff9900;
+}
+
+.log-entry.error {
+    color: #ff0055;
+    font-weight: bold;
+}
+
+.log-entry.success {
+    color: #00ff99;
+}
+
+.log-entry.dim {
+    opacity: 0.5;
+}
+
+/* 5. Galactic Store */
+.shop-marquee {
+    background: #111;
+    border-radius: 12px;
+    border: 1px solid #333;
+    height: 280px;
+}
+
+.product-card {
+    min-width: 250px;
+    height: 220px;
+    background: #16171f;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #333;
+    transition: transform 0.3s;
+    position: relative;
+    overflow: hidden;
+    padding: 20px;
+    text-align: center;
+    margin-right: 0;
+    /* Let gap handle spacing if needed, but usually margins are okay */
+}
+
+.product-card:hover {
+    border-color: var(--neon-purple);
+    box-shadow: 0 0 20px rgba(138, 43, 226, 0.2);
+}
+
+.p-icon {
+    font-size: 4rem;
+    margin-bottom: 15px;
+}
+
+.p-name {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    margin-bottom: 5px;
+}
+
+.p-price {
+    color: var(--neon-purple);
+    font-weight: bold;
+}
+
+/* 6. Sync Data */
+.sync-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.data-marquee {
+    background: rgba(0, 0, 0, 0.5);
+    border-top: 1px solid var(--neon-cyan);
+    border-bottom: 1px solid var(--neon-cyan);
+    height: 60px;
+}
+
+.footer-sync {
+    border-color: rgba(0, 243, 255, 0.3);
+}
+
+.data-packet {
+    font-family: 'Consolas', monospace;
+    color: var(--neon-cyan);
+    padding: 0 20px;
+    font-size: 1.1rem;
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.data-packet.alt {
+    color: rgba(0, 243, 255, 0.5);
+}
+
+
+/* 7. Star Field */
+.stars-marquee {
+    height: 100px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+}
+
+.star {
+    font-size: 24px;
+    color: #fff;
+    opacity: 0.8;
+    text-shadow: 0 0 5px #fff;
+    padding: 0 20px;
+}
+
+.star.small {
+    font-size: 12px;
+    opacity: 0.5;
+}
+
+/* 8. Nebula News */
+.news-marquee {
+    background: rgba(188, 19, 254, 0.1);
+    border-top: 2px solid var(--neon-pink);
+    border-bottom: 2px solid var(--neon-pink);
+    height: 50px;
+}
+
+.news-item {
+    font-family: var(--font-display);
+    color: #fff;
+    font-size: 1.1rem;
+    padding: 0 40px;
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.news-item::before {
+    content: "●";
+    color: var(--neon-pink);
+    margin-right: 15px;
+    font-size: 0.8rem;
+    animation: blink 2s infinite;
+}
+
+/* 9. Warp Tunnel */
+.warp-marquee {
+    height: 120px;
+    background: #000;
+    border: 2px solid var(--neon-purple);
+    overflow: hidden;
+    perspective: 500px;
+}
+
+.warp-gate {
+    font-family: var(--font-display);
+    font-size: 2.5rem;
+    color: transparent;
+    -webkit-text-stroke: 1px var(--neon-purple);
+    padding: 0 50px;
+    transform: skewX(-20deg);
+    opacity: 0.8;
+    background: linear-gradient(90deg, transparent, rgba(138, 43, 226, 0.1), transparent);
+}
+
+/* Controls */
+.controls-bar {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.action-btn {
+    background: rgba(0, 243, 255, 0.1);
+    border: 1px solid var(--neon-cyan);
+    color: var(--neon-cyan);
+    padding: 8px 16px;
+    font-family: var(--font-main);
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.action-btn:hover {
+    background: var(--neon-cyan);
+    color: #000;
+    box-shadow: 0 0 10px var(--neon-cyan);
+}
+
+.action-btn.danger {
+    border-color: var(--neon-pink);
+    color: var(--neon-pink);
+    background: rgba(188, 19, 254, 0.1);
+}
+
+.action-btn.danger:hover {
+    background: var(--neon-pink);
+    color: #fff;
+    box-shadow: 0 0 10px var(--neon-pink);
+}
+
+.status-text {
+    font-family: 'Consolas', monospace;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.neon-input {
+    background: #0f1016;
+    border: 1px solid #333;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-family: 'Consolas', monospace;
+    width: 200px;
+}
+
+.neon-input:focus {
+    outline: none;
+    border-color: var(--neon-pink);
+    box-shadow: 0 0 5px var(--neon-pink);
+}
+
+/* 12. Command Line */
+.command-marquee {
+    background: #000;
+    border: 1px solid #333;
+    height: 60px;
+    font-family: 'Consolas', monospace;
+}
+
+.cmd-item {
+    padding: 0 30px;
+    color: #0f0;
+    display: flex;
+    align-items: center;
+    height: 100%;
+    font-size: 1.1rem;
+}
+
+.cmd-item::before {
+    content: ">";
+    margin-right: 10px;
+    color: #0f0;
+}
+
+.cmd-item.new {
+    color: var(--neon-pink);
+    animation: flash 0.5s;
+}
+
+@keyframes flash {
+    0% {
+        background-color: var(--neon-pink);
+        color: #fff;
+    }
+
+    100% {
+        background-color: transparent;
+    }
+}
+
+/* 10. Tech Stack */
+.tech-marquee {
+    height: 80px;
+    background: rgba(0, 243, 255, 0.05);
+    border-radius: 8px;
+    display: flex;
+    /* Ensure container aligns content if needed */
+}
+
+.tech-badge {
+    background: #0f1016;
+    border: 1px solid var(--neon-cyan);
+    color: var(--neon-cyan);
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-family: 'Consolas', monospace;
+    font-weight: bold;
+    box-shadow: 0 0 10px rgba(0, 243, 255, 0.1);
+    transition: all 0.3s;
+    cursor: default;
+    display: flex;
+    align-items: center;
+}
+
+.tech-badge:hover {
+    background: var(--neon-cyan);
+    color: #000;
+    box-shadow: 0 0 20px var(--neon-cyan);
+}
+
+/* 11. Noise */
+.noise-marquee {
+    background: #000;
+    border: 1px solid #333;
+    height: 40px;
+    border-radius: 4px;
+    opacity: 0.6;
+    display: flex;
+    align-items: center;
+    /* Fix vertical alignment */
+}
+
+.noise {
+    font-family: 'Consolas', monospace;
+    color: #444;
+    letter-spacing: 2px;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+/* Utility Animations */
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Fix Vertical Alignment and Containment for All Marquees */
+.comet-marquee-container {
+    overflow: hidden;
+    width: 100%;
+    max-width: 100%;
+}
+
+/* Ensure content doesn't break layout */
+.comet-marquee-content {
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+/* Correction for taller items in Fleet */
+.fleet-marquee {
+    height: 80px;
+    display: flex;
+    align-items: center;
+}
+
+
+/* Neon Colors */
+.neon-text-blue {
+    color: var(--neon-blue);
+    text-shadow: 0 0 10px var(--neon-blue);
+}
+
+.neon-text-pink {
+    color: var(--neon-pink);
+    text-shadow: 0 0 10px var(--neon-pink);
+}
+
+.neon-text-purple {
+    color: var(--neon-purple);
+    text-shadow: 0 0 10px var(--neon-purple);
+}
+
+.neon-text-cyan {
+    color: var(--neon-cyan);
+    text-shadow: 0 0 10px var(--neon-cyan);
+}
+
+footer {
+    text-align: center;
+    padding: 40px;
+    color: #555;
+    font-size: 0.9rem;
+    margin-top: 50px;
+}
+
+.heart {
+    color: var(--neon-pink);
+}
+
+/* Hero Actions (Social Buttons) */
+.hero-actions {
+    margin-top: 30px;
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+}
+
+.hero-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 12px 24px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-family: var(--font-display);
+    font-weight: bold;
+    font-size: 1.1rem;
+    transition: all 0.3s;
+    border: 1px solid transparent;
+}
+
+.hero-btn .btn-icon {
+    margin-right: 10px;
+    font-size: 1.2rem;
+}
+
+/* NPM Button */
+.hero-btn.npm {
+    background: rgba(203, 0, 0, 0.1);
+    border-color: #cb0000;
+    color: #cb0000;
+    box-shadow: 0 0 10px rgba(203, 0, 0, 0.2);
+}
+
+.hero-btn.npm:hover {
+    background: #cb0000;
+    color: #fff;
+    box-shadow: 0 0 20px rgba(203, 0, 0, 0.6);
+    transform: translateY(-2px);
+}
+
+/* GitHub Button */
+.hero-btn.github {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #fff;
+    color: #fff;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+.hero-btn.github:hover {
+    background: #fff;
+    color: #000;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
+    transform: translateY(-2px);
+}
+
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+    .container {
+        padding: 0 15px;
+        /* Tighter container padding */
+    }
+
+    /* Hero Section Compactness */
+    .hero-section {
+        padding-top: 40px;
+        padding-bottom: 40px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .hero-marquee {
+        font-size: 3rem;
+        /* Much smaller hero text */
+    }
+
+    .hero-content {
+        margin-top: 20px;
+        width: 100%;
+        max-width: 100%;
+        /* Ensure it doesn't overflow */
+        padding: 0 15px;
+        /* Add padding akin to container */
+    }
+
+    .hero-content h1 {
+        font-size: 1.8rem;
+        line-height: 1.2;
+    }
+
+    .hero-content p {
+        font-size: 0.95rem;
+        padding: 0 10px;
+    }
+
+    .hero-actions {
+        margin-top: 20px;
+        gap: 10px;
+        flex-wrap: wrap;
+        /* Allow wrapping */
+    }
+
+    .hero-btn {
+        padding: 10px 20px;
+        /* Smaller buttons */
+        font-size: 1rem;
+        width: 100%;
+        /* Full width buttons for touch */
+        justify-content: center;
+    }
+
+    /* Compact Demo Blocks */
+    .demo-block {
+        padding: 20px 15px;
+        /* Reduced padding */
+        border-radius: 12px;
+        margin-bottom: 40px;
+        /* Reduced margin between blocks */
+    }
+
+    .block-header {
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-start;
+        margin-bottom: 15px;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+        /* Smaller headers */
+    }
+
+    /* Stack controls on mobile */
+    .controls-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .neon-input {
+        width: 100%;
+    }
+
+    /* Adjust Warp Gate text size */
+    .warp-gate {
+        font-size: 1.2rem;
+        padding: 0 15px;
+    }
+
+    .warp-marquee {
+        height: 60px;
+        /* More compact */
+    }
+
+    /* Adjust Product Cards */
+    .product-card {
+        min-width: 160px;
+        /* Smaller cards */
+        height: 180px;
+        padding: 10px;
+    }
+
+    .p-icon {
+        font-size: 3rem;
+        margin-bottom: 10px;
+    }
+
+    .p-name {
+        font-size: 1rem;
+    }
+
+    .shop-marquee {
+        height: 240px;
+    }
+
+    /* Adjust container height */
+
+    /* Optimize noise text size */
+    .noise {
+        font-size: 0.7rem;
+        /* Tiny noise text */
+    }
+
+    .noise-marquee {
+        height: 30px;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-actions {
+        flex-direction: column;
+    }
+}
+
+/* Footer Link */
+.author-link {
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s;
+    border-bottom: 1px dashed transparent;
+}
+
+.author-link:hover {
+    color: var(--neon-blue);
+    text-shadow: 0 0 8px var(--neon-blue);
+    border-bottom-color: var(--neon-blue);
+}

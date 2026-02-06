@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CometMarquee - High Performance Scrolling</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>☄️</text></svg>">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;500;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Comet Marquee CSS -->
+    <link rel="stylesheet" href="../dist/comet-marquee.css">
+
+    <!-- Demo CSS -->
+    <link rel="stylesheet" href="demo.css">
+</head>
+
+<body>
+    <div class="stars-bg"></div>
+    <div class="grid-overlay"></div>
+
+    <!-- 1. Hero Full Width Section -->
+    <section class="hero-section">
+        <div class="comet-marquee-container hero-marquee" id="heroMarquee">
+            <div class="comet-marquee-content">
+                <div class="hero-text">COMET MARQUEE</div>
+                <div class="hero-separator">⚡</div>
+                <div class="hero-text outlined">PERFORMANCE</div>
+                <div class="hero-separator">⚡</div>
+                <div class="hero-text">SMOOTH</div>
+                <div class="hero-separator">⚡</div>
+                <div class="hero-text outlined">LIGHTWEIGHT</div>
+                <div class="hero-separator">⚡</div>
+                <!-- Doubled content for safety on large screens -->
+                <div class="hero-text">COMET MARQUEE</div>
+                <div class="hero-separator">⚡</div>
+                <div class="hero-text outlined">PERFORMANCE</div>
+                <div class="hero-separator">⚡</div>
+                <div class="hero-text">SMOOTH</div>
+                <div class="hero-separator">⚡</div>
+                <div class="hero-text outlined">LIGHTWEIGHT</div>
+                <div class="hero-separator">⚡</div>
+            </div>
+        </div>
+
+        <div class="hero-content">
+            <h1>NEXT GEN SCROLLING</h1>
+            <p>Ultra-lightweight. Warp-speed performance. Zero dependencies.</p>
+            <div class="hero-actions">
+                <a href="https://www.npmjs.com/package/comet-marquee" target="_blank" class="hero-btn npm">
+                    <span class="btn-icon">📦</span> NPM Package
+                </a>
+                <a href="https://github.com/OleksandrVorushylo/comet-marquee" target="_blank" class="hero-btn github">
+                    <span class="btn-icon">⭐</span> GitHub
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <div class="container">
+
+        <!-- 2. Solar System (Gap & Speed) -->
+        <section class="demo-block">
+            <div class="block-header">
+                <h2><span class="neon-text-blue">01.</span> Solar System</h2>
+                <div class="tags">
+                    <span class="tag">speed: 40</span>
+                    <span class="tag">gap: 40px</span>
+                    <span class="tag">pauseOnHover: true</span>
+                </div>
+            </div>
+            <p class="description">Standard horizontal scroll with consistent gap and hover pause.</p>
+
+            <div class="comet-marquee-container planet-marquee" id="planetMarquee">
+                <div class="comet-marquee-content">
+                    <div class="planet-card">🌞 SUN</div>
+                    <div class="planet-card">🌑 MERCURY</div>
+                    <div class="planet-card">🌕 VENUS</div>
+                    <div class="planet-card">🌎 EARTH</div>
+                    <div class="planet-card">🔴 MARS</div>
+                    <div class="planet-card">🪐 JUPITER</div>
+                    <div class="planet-card">💍 SATURN</div>
+                    <div class="planet-card">❄️ URANUS</div>
+                    <div class="planet-card">🌊 NEPTUNE</div>
+                    <div class="planet-card">⚪ PLUTO</div>
+                    <div class="planet-card">☄️ COMET</div>
+                    <div class="planet-card">✨ ASTEROID BELT</div>
+                    <div class="planet-card">🌌 MILKY WAY</div>
+                    <div class="planet-card">🕳️ BLACK HOLE</div>
+                    <div class="planet-card">💥 SUPERNOVA</div>
+                    <div class="planet-card">🌠 NEBULA</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Space Fleet (Reverse) -->
+        <section class="demo-block">
+            <div class="block-header">
+                <h2><span class="neon-text-cyan">02.</span> Space Fleet</h2>
+                <div class="tags">
+                    <span class="tag">reverse: true</span>
+                    <span class="tag">speed: 100</span>
+                </div>
+            </div>
+            <p class="description">High speed reverse scrolling (Right to Left).</p>
+
+            <div class="comet-marquee-container fleet-marquee" id="fleetMarquee">
+                <div class="comet-marquee-content">
+                    <div class="ship-card">🚀 INTERCEPTOR</div>
+                    <div class="ship-card">🛸 SCOUT</div>
+                    <div class="ship-card">🛰️ DRONE</div>
+                    <div class="ship-card">🚀 DESTROYER</div>
+                    <div class="ship-card">🛸 MOTHERSHIP</div>
+                    <div class="ship-card">🛰️ SATELLITE</div>
+                    <div class="ship-card">🚀 FIGHTER</div>
+                    <div class="ship-card">🛸 CARGO</div>
+                    <div class="ship-card">🛰️ PROBE</div>
+                    <div class="ship-card">🚀 CRUISER</div>
+                    <div class="ship-card">🛸 FLAGSHIP</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Mission Logs (Vertical) -->
+        <section class="demo-block">
+            <div class="block-header">
+                <h2><span class="neon-text-pink">03.</span> Mission Logs</h2>
+                <div class="tags">
+                    <span class="tag">vertical: true</span>
+                    <span class="tag">height: 400px</span>
+                </div>
+            </div>
+            <p class="description">Vertical scrolling mode with synced reverse columns.</p>
+
+            <div class="vertical-wrapper">
+                <div class="comet-marquee-container vertical-marquee" id="verticalMarquee1">
+                    <div class="comet-marquee-content">
+                        <div class="log-entry">System check... OK</div>
+                        <div class="log-entry warn">Pressure dropping</div>
+                        <div class="log-entry">Oxygen levels: 98%</div>
+                        <div class="log-entry">Thrusters engaged</div>
+                        <div class="log-entry error">Connection unstable</div>
+                        <div class="log-entry">Recalibrating...</div>
+                        <div class="log-entry">Orbit achieved</div>
+                        <div class="log-entry">Solar panels deployed</div>
+                        <div class="log-entry success">Signal acquired</div>
+                        <div class="log-entry error">Shields at 40%</div>
+                        <div class="log-entry warn">Reactor overheating</div>
+                        <div class="log-entry">Navigation update</div>
+                    </div>
+                </div>
+
+                <div class="comet-marquee-container vertical-marquee" id="verticalMarquee2">
+                    <div class="comet-marquee-content">
+                        <div class="log-entry">NAV_001: 45.234</div>
+                        <div class="log-entry">NAV_002: 12.881</div>
+                        <div class="log-entry">NAV_003: 99.102</div>
+                        <div class="log-entry dim">Scanning sector 7</div>
+                        <div class="log-entry">Target locked</div>
+                        <div class="log-entry">Trajectory set</div>
+                        <div class="log-entry dim">Waiting command</div>
+                        <div class="log-entry">Warp drive ready</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. Galactic Store (Force Animation & Fade) -->
+        <section class="demo-block">
+            <div class="block-header">
+                <h2><span class="neon-text-purple">04.</span> Galactic Store</h2>
+                <div class="tags">
+                    <span class="tag">forceAnimation: true</span>
+                    <span class="tag">fadeEdges: true</span>
+                </div>
+            </div>
+            <p class="description">Forces animation even when content is short + Fade edges effect covering the sides.
+            </p>
+
+            <div class="comet-marquee-container shop-marquee" id="shopMarquee">
+                <div class="comet-marquee-content">
+                    <div class="product-card">
+                        <div class="p-icon">🥾</div>
+                        <div class="p-name">Grav-Boots</div>
+                        <div class="p-price">₮ 500</div>
+                    </div>
+                    <div class="product-card">
+                        <div class="p-icon">🔫</div>
+                        <div class="p-name">Plasma Rifle</div>
+                        <div class="p-price">₮ 1200</div>
+                    </div>
+                    <div class="product-card">
+                        <div class="p-icon">🧊</div>
+                        <div class="p-name">Cosmo Ice</div>
+                        <div class="p-price">₮ 50</div>
+                    </div>
+                    <div class="product-card">
+                        <div class="p-icon">🗺️</div>
+                        <div class="p-name">Holo Map</div>
+                        <div class="p-price">₮ 200</div>
+                    </div>
+                    <div class="product-card">
+                        <div class="p-icon">🔧</div>
+                        <div class="p-name">Droid Kit</div>
+                        <div class="p-price">₮ 150</div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- 6. Data Uplink (Sync Pause) -->
+        <section class="demo-block">
+            <div class="block-header">
+                <h2><span class="neon-text-cyan">05.</span> Data Uplink</h2>
+                <div class="tags">
+                    <span class="tag">syncPause: true</span>
+                    <span class="tag">pauseOnClick: true</span>
+                </div>
+            </div>
+            <p class="description">Clicking ANY marquee below pauses BOTH (Synchronized).</p>
+
+            <div class="sync-wrapper">
+                <div class="comet-marquee-container data-marquee" id="syncMarquee1">
+                    <div class="comet-marquee-content">
+                        <div class="data-packet">010101</div>
+                        <div class="data-packet">110011</div>
+                        <div class="data-packet">001100</div>
+                        <div class="data-packet">111000</div>
+                        <div class="data-packet">TRX_88</div>
+                        <div class="data-packet">PKT_99</div>
+                        <div class="data-packet">ACK_OK</div>
+                        <div class="data-packet">SYN_ACK</div>
+                        <div class="data-packet">REQ_200</div>
+                        <div class="data-packet">PING_ms</div>
+                        <div class="data-packet">HOST_UP</div>
+                        <div class="data-packet">ENCRYPT</div>
+                        <div class="data-packet">AUTH_OK</div>
+                        <div class="data-packet">TOKEN_X</div>
+                        <div class="data-packet">SESSION</div>
+                        <div class="data-packet">HANDSHAKE</div>
+                        <div class="data-packet">ENCRYPT_V2</div>
+                        <div class="data-packet">ACCESS_GRANT</div>
+                    </div>
+                </div>
+
+                <div class="comet-marquee-container data-marquee footer-sync" id="syncMarquee2">
+                    <div class="comet-marquee-content">
+                        <div class="data-packet alt">UPLOAD</div>
+                        <div class="data-packet alt">DOWNLOAD</div>
+                        <div class="data-packet alt">b_hash_1</div>
+                        <div class="data-packet alt">b_hash_2</div>
+                        <div class="data-packet alt">b_hash_3</div>
+                        <div class="data-packet alt">VERIFIED</div>
+                        <div class="data-packet alt">BLOCK_A</div>
+                        <div class="data-packet alt">BLOCK_B</div>
+                        <div class="data-packet alt">MINING</div>
+                        <div class="data-packet alt">SYNCING</div>
+                        <div class="data-packet alt">PEER_2</div>
+                        <div class="data-packet alt">PEER_8</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. Star Field (Initial Shift) -->
+        <section class="demo-block">
+            <div class="block-header">
+                <h2><span class="neon-text-blue">06.</span> Deep Space</h2>
+                <div class="tags">
+                    <span class="tag">initialShift: true</span>
+                    <span class="tag">speed: 10</span>
+                </div>
+            </div>
+            <p class="description">Starts with content already shifted (no empty space at start).</p>
+
+            <div class="comet-marquee-container stars-marquee" id="starsMarquee">
+                <div class="comet-marquee-content">
+                    <span class="star">★</span>
+                    <span class="star small">✦</span>
+                    <span class="star">✨</span>
+                    <span class="star small">.</span>
+                    <span class="star">✶</span>
+                    <span class="star small">⋆</span>
+                    <span class="star">★</span>
+                    <span class="star small">✦</span>
+                    <span class="star">✨</span>
+                    <span class="star small">.</span>
+                    <span class="star">★</span>
+                    <span class="star small">✦</span>
+                    <span class="star">✨</span>
+                    <span class="star small">.</span>
+                    <span class="star">✶</span>
+                    <span class="star small">⋆</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 8. Nebula Ticker (Pause on Invisible) -->
+        <section class="demo-block">
+            <div class="block-header">
+                <h2><span class="neon-text-pink">07.</span> Nebula News</h2>
+                <div class="tags">
+                    <span class="tag">pauseOnInvisible: true</span>
+                </div>
+            </div>
+            <p class="description">Automatically pauses animation when this section is scrolled out of view.</p>
+
+            <div class="comet-marquee-container news-marquee" id="newsMarquee">
+                <div class="comet-marquee-content">
+                    <div class="news-item">BREAKING: Supernova detected in Sector 9</div>
+                    <div class="news-item">MARKET: Dilithium crystals up 15%</div>
+                    <div class="news-item">WEATHER: Solar storms expected on Mars</div>
+                    <div class="news-item">WEATHER: Solar storms expected on Mars</div>
+                    <div class="news-item">TRAVEL: Hyperlanes closed for maintenance</div>
+                    <div class="news-item">CRIME: Space pirates spotted in quadrant 4</div>
+                    <div class="news-item">TECH: Quantum drive breakthrough announced</div>
+                    <div class="news-item">GOSSIP: Alien ambassador visits Earth</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 9. Hyperloop (Replacement: Warp Tunnel) -->
+        <section class="demo-block">
+            <div class="block-header">
+                <h2><span class="neon-text-purple">08.</span> Warp Tunnel</h2>
+                <div class="tags">
+                    <span class="tag">speed: 200</span>
+                    <span class="tag">repeatCount: 6</span>
+                </div>
+            </div>
+            <p class="description">High speed tunnel effect using larger segments.</p>
+
+            <div class="comet-marquee-container warp-marquee" id="warpMarquee">
+                <div class="comet-marquee-content">
+                    <div class="warp-gate">||| SECTOR A |||</div>
+                    <div class="warp-gate">||| SECTOR B |||</div>
+                    <div class="warp-gate">||| SECTOR C |||</div>
+                    <div class="warp-gate">||| SECTOR D |||</div>
+                    <div class="warp-gate">||| SECTOR E |||</div>
+                    <div class="warp-gate">||| SECTOR F |||</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 10. Ship Systems (Dynamic Start) -->
+        <section class="demo-block">
+            <div class="block-header">
+                <h2><span class="neon-text-cyan">09.</span> System Check</h2>
+                <div class="tags">
+                    <span class="tag">adaptivePause: true</span>
+                </div>
+            </div>
+            <p class="description">Marquee only starts when content exceeds container width.</p>
+
+            <div class="controls-bar">
+                <button class="action-btn" id="btnAddSystem">➕ Install Module</button>
+                <span class="status-text" id="systemStatus">Systems: 2 (Static)</span>
+            </div>
+
+            <div class="comet-marquee-container tech-marquee" id="techMarquee">
+                <div class="comet-marquee-content">
+                    <!-- Starting with few items -->
+                    <div class="tech-badge">CORE_001</div>
+                    <div class="tech-badge">CORE_002</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 11. Background Noise -->
+        <section class="demo-block">
+            <div class="block-header">
+                <h2><span class="neon-text-blue">10.</span> Background Noise</h2>
+                <div class="tags">
+                    <span class="tag">pauseOnHover: false</span>
+                    <span class="tag">tag">pauseOnClick: false</span>
+                </div>
+            </div>
+            <p class="description">Purely decorative. Vertical centered.</p>
+
+            <div class="comet-marquee-container noise-marquee" id="noiseMarquee">
+                <div class="comet-marquee-content">
+                    <span class="noise">0010011101010001010111010100100111010100010101110101001001</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 12. Dynamic Content Management -->
+        <section class="demo-block">
+            <div class="block-header">
+                <h2><span class="neon-text-pink">11.</span> Command Line</h2>
+                <div class="tags">
+                    <span class="tag">Dynamic API</span>
+                </div>
+            </div>
+            <p class="description">Add or remove alerts dynamically.</p>
+
+            <div class="controls-bar">
+                <input type="text" id="newsInput" placeholder="Enter alert text..." class="neon-input"
+                    value="⚠ INTRUDER ALERT">
+                <button class="action-btn" onclick="addNews()">Broadcast</button>
+                <button class="action-btn danger" onclick="removeNews()">Clear Last</button>
+            </div>
+
+            <div class="comet-marquee-container command-marquee" id="commandMarquee">
+                <div class="comet-marquee-content">
+                    <div class="cmd-item">System ready.</div>
+                    <div class="cmd-item">Waiting for input...</div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <footer>
+        <p>Built by <a href="https://github.com/OleksandrVorushylo" target="_blank" class="author-link">Oleksandr
+                Vorushylo</a> <span class="heart">❤</span></p>
+    </footer>
+
+    <!-- Script -->
+    <script src="./comet-marquee.umd.js"></script>
+    <script>
+        // 1. Hero
+        new CometMarquee('#heroMarquee', {
+            speed: 80,
+            fullWidth: true,
+            forceAnimation: true,
+            forceAnimationWidth: 2,
+            fadeEdges: true
+        });
+
+        // 2. Solar System
+        new CometMarquee('#planetMarquee', {
+            speed: 40,
+            pauseOnHover: true,
+            gap: 40
+        });
+
+        // 3. Space Fleet (Reverse + Fast)
+        new CometMarquee('#fleetMarquee', {
+            speed: 100,
+            reverse: true,
+            adaptivePause: true,
+            gap: 20
+        });
+
+        // 4. Mission Logs (Vertical)
+        new CometMarquee('#verticalMarquee1', {
+            vertical: true,
+            speed: 30,
+            height: '400px',
+            pauseOnHover: true,
+            forceAnimation: true
+        });
+
+        new CometMarquee('#verticalMarquee2', {
+            vertical: true,
+            speed: 50,
+            height: '400px',
+            reverse: true,
+            pauseOnHover: true,
+            forceAnimation: true
+        });
+
+        // 5. Galactic Store (Force Animation + Fade)
+        new CometMarquee('#shopMarquee', {
+            speed: 30,
+            forceAnimation: true, // Forces animation even for 3 items
+            forceAnimationWidth: 2, // Calculate based on 2x screen width
+            fadeEdges: true,      // Adds blur
+            gap: 60
+        });
+
+        // 6. Data Uplink (Sync Pause)
+        new CometMarquee('#syncMarquee1', {
+            speed: 60,
+            gap: 10,
+            syncPause: true,
+            pauseOnClick: true
+        });
+
+        new CometMarquee('#syncMarquee2', {
+            speed: 60,
+            gap: 10,
+            reverse: true,
+            syncPause: true,
+            pauseOnClick: true
+        });
+
+        // 7. Star Field
+        new CometMarquee('#starsMarquee', {
+            speed: 10,
+            initialShift: true,
+            gap: 50
+        });
+
+        // 8. Nebula News
+        new CometMarquee('#newsMarquee', {
+            speed: 50,
+            pauseOnInvisible: true,
+            pauseOnHover: true,
+            gap: 60
+        });
+
+        // 9. Warp Tunnel (Replacement for Hyperloop)
+        new CometMarquee('#warpMarquee', {
+            speed: 200,
+            repeatCount: 6,
+            forceAnimation: true,
+            gap: 0
+        });
+
+        // 10. Ship Systems (Dynamic Start)
+        const techMarquee = new CometMarquee('#techMarquee', {
+            speed: 60,
+            adaptivePause: true,
+            gap: 20
+            // No forceAnimation -> will wait for content
+        });
+
+        const systemModules = ['HYPER_DRIVE', 'SHIELD_GEN', 'LIFE_SUPP', 'NAV_COMP', 'WEAPON_SYS', 'SENSOR_ARR'];
+        const btnAddSystem = document.getElementById('btnAddSystem');
+        const statusText = document.getElementById('systemStatus');
+
+        btnAddSystem.addEventListener('click', () => {
+            const randomMod = systemModules[Math.floor(Math.random() * systemModules.length)] + '_' + Math.floor(Math.random() * 999);
+            techMarquee.addItem(`<div class="tech-badge">${randomMod}</div>`);
+
+            // Just for demo feedback
+            const count = document.querySelectorAll('#techMarquee .tech-badge').length;
+            if (techMarquee.isHorizontalScrolling) {
+                statusText.innerText = `Systems: ${count} (Running)`;
+                statusText.style.color = '#0affc2';
+            } else {
+                statusText.innerText = `Systems: ${count} (Static)`;
+            }
+        });
+
+        // 11. Noise
+        new CometMarquee('#noiseMarquee', {
+            speed: 20,
+            pauseOnHover: false,
+            pauseOnClick: false,
+            forceAnimation: true
+        });
+
+        // 12. Command Line (Dynamic)
+        const cmdMarquee = new CometMarquee('#commandMarquee', {
+            speed: 80,
+            pauseOnHover: true,
+            gap: 40
+        });
+
+        function addNews() {
+            const input = document.getElementById('newsInput');
+            const text = input.value;
+            if (text) {
+                cmdMarquee.addItem(`<div class="cmd-item new">${text}</div>`);
+            }
+        }
+
+        function removeNews() {
+            cmdMarquee.removeItem();
+        }
+
+    </script>
+</body>
+
+</html>

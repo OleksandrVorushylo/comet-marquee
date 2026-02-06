@@ -10,3 +10,6 @@ yarn.lock
 pnpm-lock.yaml
 *.log
 .DS_Store
+*.map
+docs/
+microbundle.config.js
