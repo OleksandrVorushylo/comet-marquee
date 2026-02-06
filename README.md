@@ -24,9 +24,6 @@ pnpm add comet-marquee
 // Default import
 import CometMarquee from 'comet-marquee';
 
-// Or named import (if supported)
-import { CometMarquee } from 'comet-marquee';
-
 // CSS
 import 'comet-marquee/dist/comet-marquee.css';
 ```
@@ -69,8 +66,11 @@ const marquee = new CometMarquee('.comet-marquee-container', {
   repeatCount: 3,           // number of content repetitions for smooth animation
   forceAnimation: false,    // force animation even if content fits in container
   forceAnimationWidth: 2,   // multiplier for forced animation width (relative to window width)
-  develop: false,            // enable debug console logging
-  fadeEdges: false            // enables fade blurring at the edges
+  develop: false,           // enable debug console logging
+  fadeEdges: false,         // enables fade blurring at the edges
+  fullWidth: false,         // stretch to full viewport width (100vw)
+  vertical: false,          // enable vertical scrolling
+  height: '300px'           // container height for vertical mode
 });
 
 // Control methods
@@ -102,7 +102,10 @@ marquee.removeItem(); // removes last original item
 | `forceAnimation` | boolean | false | Force animation even when content fits within container width                                                              |
 | `forceAnimationWidth` | number | 2 | Width multiplier (relative to window width) used for forced animation calculations                                         |
 | `develop` | boolean | false | Enable debug console logging for all events                                                                                |
-| `fadeEdges` | boolean/number | false | Eenables fade blurring at the edges. If true, then it will always blur, if for example 1900, then it will blur starting from 1900px (for cases when you need to blur at high resolutions)                                                                                      |
+| `fadeEdges` | boolean/number | false | Enables fade blurring at the edges. If true, then it will always blur, if for example 1900, then it will blur starting from 1900px (for cases when you need to blur at high resolutions)                                                                                      |
+| `fullWidth` | boolean | false | Stretches the container to full viewport width (100vw) using negative margins. Useful for marquees that need to span entire viewport regardless of parent container. |
+| `vertical` | boolean | false | Enables vertical scrolling mode (top to bottom or bottom to top). |
+| `height` | number/string | 300px | Container height for vertical mode. Can be number (pixels) or CSS string (e.g., '300px', '50vh'). Defaults to CSS variable --comet-marquee-height (300px). |
 
 ## Force Animation Feature
 
@@ -298,6 +301,16 @@ document.addEventListener('comet-marquee:animation-started', (e) => {
 
 **Note:** Tested on Safari 15.6+. Earlier versions may work but are not officially supported.
 
+## CSS Customization
+
+The plugin uses CSS variables which you can override:
+
+```css
+:root {
+  --comet-marquee-height: 300px; /* Default height for vertical mode */
+}
+```
+
 ## Advanced Usage Examples
 
 ### Synchronized Marquees
@@ -328,6 +341,24 @@ const marquee = new CometMarquee('.marquee', {
 // Listen for force animation events
 marquee.containers[0].addEventListener('comet-marquee:force-animation-enabled', (e) => {
   console.log('Animation forced:', e.detail.originalContentWidth, 'px content in', e.detail.containerWidth, 'px container');
+});
+```
+
+### Vertical Marquee
+```javascript
+const marquee = new CometMarquee('.vertical-marquee', {
+  vertical: true,
+  height: '500px',     // Explicit height required for vertical mode
+  speed: 40
+});
+```
+
+### Full Width Section
+```javascript
+const marquee = new CometMarquee('.hero-marquee', {
+  fullWidth: true,     // Stretches to 100vw
+  speed: 80,
+  fadeEdges: true
 });
 ```
 

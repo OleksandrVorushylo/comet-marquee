@@ -3,17 +3,30 @@
   --comet-marquee-fade-distance: 100px;
   --comet-marquee-fade-rgba-start: rgba(0, 0, 0, 0);
   --comet-marquee-fade-rgba-end: rgba(0, 0, 0, 1);
+  --comet-marquee-height: 500px;
 }
 
 .comet-marquee-container {
   width: 100%;
   max-width: 100%;
   padding: 1px;
+  overflow: hidden;
 }
 
+/* Horizontal fade edges */
 .comet-marquee-container.is-fade-edges {
-  -webkit-mask-image: linear-gradient( to right, var(--comet-marquee-fade-rgba-start) 0px, var(--comet-marquee-fade-rgba-end) var(--comet-marquee-fade-distance), var(--comet-marquee-fade-rgba-end) calc(100% - var(--comet-marquee-fade-distance)), var(--comet-marquee-fade-rgba-start) 100%);
+  -webkit-mask-image: linear-gradient(to right,
+  var(--comet-marquee-fade-rgba-start) 0px,
+  var(--comet-marquee-fade-rgba-end) var(--comet-marquee-fade-distance),
+  var(--comet-marquee-fade-rgba-end) calc(100% - var(--comet-marquee-fade-distance)),
+  var(--comet-marquee-fade-rgba-start) 100%);
+  mask-image: linear-gradient(to right,
+  var(--comet-marquee-fade-rgba-start) 0px,
+  var(--comet-marquee-fade-rgba-end) var(--comet-marquee-fade-distance),
+  var(--comet-marquee-fade-rgba-end) calc(100% - var(--comet-marquee-fade-distance)),
+  var(--comet-marquee-fade-rgba-start) 100%);
   -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
   -webkit-mask-composite: destination-in;
   mask-composite: intersect;
 }
@@ -30,4 +43,30 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* ==================== VERTICAL MODE ==================== */
+
+.comet-marquee-container[data-vertical] {
+  width: auto;
+  height: var(--comet-marquee-height);
+}
+
+.comet-marquee-container[data-vertical] .comet-marquee-content {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* Vertical fade edges */
+.comet-marquee-container[data-vertical].is-fade-edges {
+  -webkit-mask-image: linear-gradient(to bottom,
+  var(--comet-marquee-fade-rgba-start) 0px,
+  var(--comet-marquee-fade-rgba-end) var(--comet-marquee-fade-distance),
+  var(--comet-marquee-fade-rgba-end) calc(100% - var(--comet-marquee-fade-distance)),
+  var(--comet-marquee-fade-rgba-start) 100%);
+  mask-image: linear-gradient(to bottom,
+  var(--comet-marquee-fade-rgba-start) 0px,
+  var(--comet-marquee-fade-rgba-end) var(--comet-marquee-fade-distance),
+  var(--comet-marquee-fade-rgba-end) calc(100% - var(--comet-marquee-fade-distance)),
+  var(--comet-marquee-fade-rgba-start) 100%);
 }

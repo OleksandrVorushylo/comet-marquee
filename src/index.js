@@ -16,6 +16,9 @@ import "./style.css";
  * @property {boolean} [forceAnimation=false] - Force animation even when content fits within container width.
  * @property {number} [forceAnimationWidth=2] - Width multiplier (relative to window width) used for forced animation calculations.
  * @property {boolean|number} [fadeEdges=false] - Enables fade blurring at the edges. If true, then it will always blur, if for example 1900, then it will blur starting from 1900px (for cases when you need to blur at high resolutions).
+ * @property {boolean} [fullWidth=false] - Stretches the container to full viewport width (100vw) using negative margins. Useful for marquees that need to span entire viewport regardless of parent container.
+ * @property {boolean} [vertical=false] - Enables vertical scrolling mode (top to bottom or bottom to top).
+ * @property {number|string} [height] - Container height for vertical mode. Can be number (pixels) or CSS string (e.g., '300px', '50vh'). Defaults to CSS variable --comet-marquee-height (300px).
  */
 
 /**
@@ -49,7 +52,7 @@ class CometMarquee {
      * @type {CometMarqueeInstance[]}
      */
     this.instances = this.containers.map((container, idx) =>
-        new CometMarqueeInstance(container, options, idx)
+      new CometMarqueeInstance(container, options, idx)
     );
   }
 
@@ -89,6 +92,11 @@ class CometMarquee {
    * Removes the last original item from all managed marquee instances.
    */
   removeItem() { this.instances.forEach(i => i.removeItem()); }
+
+  /**
+   * Destroys all managed marquee instances and cleans up resources.
+   */
+  destroy() { this.instances.forEach(i => i.destroy()); }
 }
 
 /**
@@ -116,7 +124,15 @@ class CometMarqueeInstance {
      * Array of original marquee items (excluding clones).
      * @type {HTMLElement[]}
      */
-    this.items = Array.from(this.content.children);
+    this.items = Array.from(this.content.children).filter(c => !c.classList.contains('comet-marquee-clone'));
+
+    /**
+     * Prevents double initialization of the same container.
+     */
+    if (this.container.classList.contains('is-init-comet-marquee')) {
+      if (options.develop) console.warn(`[CometMarquee #${idx}] Already initialized. Skipping.`);
+      return;
+    }
 
     const cs = getComputedStyle(this.content);
     const parsedGap = parseFloat(cs.gap || cs.columnGap || '0');
@@ -139,8 +155,19 @@ class CometMarqueeInstance {
       develop: !!options.develop,
       forceAnimation: !!options.forceAnimation,
       forceAnimationWidth: options.forceAnimationWidth ?? 2,
-      fadeEdges: options.fadeEdges ?? false
+      fadeEdges: options.fadeEdges ?? false,
+      fullWidth: !!options.fullWidth,
+      vertical: !!options.vertical,
+      height: options.height ?? null
     };
+
+    /**
+     * Axis abstraction for vertical/horizontal scrolling.
+     * @type {boolean}
+     */
+    this.isVertical = this.options.vertical;
+    this.axis = this.isVertical ? 'y' : 'x';
+    this.sizeProperty = this.isVertical ? 'height' : 'width';
 
     window.__allCometMarqueeInstances.push(this);
 
@@ -183,7 +210,11 @@ class CometMarqueeInstance {
     /** @type {boolean} */
     this.forceAnimationEnabled = false;
 
-    // CRITICAL: Multiple layers of loop prevention
+    /**
+     * CRITICAL: Multiple layers of loop prevention.
+     * These properties track resize state to prevent infinite loops in ResizeObserver.
+     * @type {number}
+     */
     this.lastContainerRectWidth = 0;
     this.lastWindowWidth = window.innerWidth;
     this.refreshTimeout = null;
@@ -191,6 +222,15 @@ class CometMarqueeInstance {
     this.isInitializing = false;
     this.resizeObserverCallCount = 0;
     this.lastResizeTimestamp = 0;
+    this.contentSetup = false;
+
+    /**
+     * Properties for fullWidth/fullHeight option support.
+     * @type {Function|null}
+     */
+    this._fullWidthResizeHandler = null;
+    this._fullWidthDebounceTimeout = null;
+    this._originalContainerStyles = null;
 
     this.init();
     this.bindEvents();
@@ -219,12 +259,15 @@ class CometMarqueeInstance {
   }
 
   /**
-   * Calculates the total width of the original content items, including gaps.
-   * @returns {number} The total width of the content.
+   * Calculates the total size (width or height) of the original content items, including gaps.
+   * @returns {number} The total size of the content.
    */
-  getTotalWidth() {
-    const widths = this.items.map(el => el.getBoundingClientRect().width);
-    return widths.length ? widths.reduce((a, b) => a + b, 0) + this.options.gap * (this.items.length - 1) : 0;
+  getTotalSize() {
+    const sizes = this.items.map(el => {
+      const rect = el.getBoundingClientRect();
+      return this.isVertical ? rect.height : rect.width;
+    });
+    return sizes.length ? sizes.reduce((a, b) => a + b, 0) + this.options.gap * (this.items.length - 1) : 0;
   }
 
   /**
@@ -232,17 +275,37 @@ class CometMarqueeInstance {
    * Dispatches 'dimensions-calculated' and 'force-animation-enabled' events.
    */
   calculateDimensions() {
-    this.containerWidth = this.container.getBoundingClientRect().width;
-    this.contentWidth = this.getTotalWidth();
-    this.shouldAnimate = this.contentWidth > this.containerWidth + 1;
+    const rect = this.container.getBoundingClientRect();
 
-    if (this.options.forceAnimation && !this.shouldAnimate) {
+    /**
+     * Uses axis-aware properties for vertical/horizontal scrolling.
+     */
+    this.containerWidth = rect.width;
+    this.containerHeight = rect.height;
+    this.containerSize = this.isVertical ? rect.height : rect.width;
+
+    this.contentWidth = this.getTotalSize();
+    this.contentSize = this.contentWidth;
+
+    /**
+     * Safety check: if content has no size, we can't animate properly.
+     */
+    if (this.contentSize <= 0) {
+      this.shouldAnimate = false;
+      if (this.options.develop) {
+        console.warn(`[CometMarquee #${this.idx}] Content ${this.isVertical ? 'height' : 'width'} is 0. Animation disabled.`);
+      }
+    } else {
+      this.shouldAnimate = this.contentSize > this.containerSize + 1;
+    }
+
+    if (this.options.forceAnimation && !this.shouldAnimate && this.contentSize > 0) {
       this.shouldAnimate = true;
       this.forceAnimationEnabled = true;
 
       this.dispatchEvent('force-animation-enabled', {
-        originalContentWidth: this.contentWidth,
-        containerWidth: this.containerWidth
+        originalContentSize: this.contentSize,
+        containerSize: this.containerSize
       });
     } else {
       this.forceAnimationEnabled = false;
@@ -250,9 +313,12 @@ class CometMarqueeInstance {
 
     this.dispatchEvent('dimensions-calculated', {
       containerWidth: this.containerWidth,
-      contentWidth: this.contentWidth,
+      containerHeight: this.containerHeight,
+      containerSize: this.containerSize,
+      contentSize: this.contentSize,
       shouldAnimate: this.shouldAnimate,
-      forceAnimationEnabled: this.forceAnimationEnabled
+      forceAnimationEnabled: this.forceAnimationEnabled,
+      isVertical: this.isVertical
     });
   }
 
@@ -264,31 +330,38 @@ class CometMarqueeInstance {
   calculateForceAnimationClones() {
     if (!this.forceAnimationEnabled || !this.items.length) return 0;
 
-    const targetWidth = window.innerWidth * this.options.forceAnimationWidth;
-    const singleSetWidth = this.contentWidth;
+    // Use viewport height for vertical, width for horizontal
+    const viewportSize = this.isVertical ? window.innerHeight : window.innerWidth;
+    const targetSize = viewportSize * this.options.forceAnimationWidth;
+    const singleSetSize = this.contentWidth;
 
-    // CRITICAL FIX: Cap the number of sets to prevent infinite cloning
-    const maxSets = 20; // Maximum 20 sets regardless of calculation
+    /**
+     * Caps the number of sets to prevent infinite cloning.
+     * Maximum 20 sets to avoid memory issues.
+     */
+    const maxSets = 20;
     const setsNeeded = Math.min(
-        Math.ceil(targetWidth / singleSetWidth),
-        maxSets
+      Math.ceil(targetSize / singleSetSize),
+      maxSets
     );
 
     const clonesNeeded = Math.max(0, (setsNeeded - 1) * this.items.length);
 
-    // CRITICAL FIX: Absolute maximum on clone count
-    const maxClones = 100; // Hard limit - максимум 100 клонов
+    /**
+     * Absolute maximum on clone count (100 clones).
+     */
+    const maxClones = 100;
     const cappedClones = Math.min(clonesNeeded, maxClones);
 
     if (cappedClones < clonesNeeded && this.options.develop) {
       console.warn(
-          `[CometMarquee #${this.idx}] Clone count capped at ${maxClones} (would be ${clonesNeeded})`
+        `[CometMarquee #${this.idx}] Clone count capped at ${maxClones} (would be ${clonesNeeded})`
       );
     }
 
     this.dispatchEvent('force-animation-calculated', {
-      targetWidth,
-      singleSetWidth,
+      targetSize,
+      singleSetSize,
       setsNeeded,
       clonesNeeded: cappedClones,
       cappedFromOriginal: clonesNeeded
@@ -346,12 +419,22 @@ class CometMarqueeInstance {
 
     if (!this.shouldAnimate) {
       this.content.style.transform = 'translate3d(0,0,0)';
-      this.content.style.width = 'auto';
+      /**
+       * Resets size based on axis (height for vertical, width for horizontal).
+       */
+      if (this.isVertical) {
+        this.content.style.height = 'auto';
+      } else {
+        this.content.style.width = 'auto';
+      }
       this.currentTranslate = 0;
+      this.contentSetup = false;
 
       this.dispatchEvent('animation-not-needed');
       return;
     }
+
+    this.contentSetup = true;
 
     this.dispatchEvent('clones-creating');
 
@@ -362,7 +445,10 @@ class CometMarqueeInstance {
       const forceClonesCount = this.calculateForceAnimationClones();
       repeatCount = Math.ceil(forceClonesCount / this.items.length);
 
-      // Use DocumentFragment for better performance
+      /**
+       * Uses DocumentFragment for better performance.
+       * Single DOM append instead of multiple to minimize reflows.
+       */
       const fragment = document.createDocumentFragment();
 
       for (let i = 0; i < forceClonesCount; i++) {
@@ -373,13 +459,16 @@ class CometMarqueeInstance {
         clonedItems.push(clone);
       }
 
-      // Single DOM append
       this.content.appendChild(fragment);
 
     } else {
+      /**
+       * Uses viewport width for clone count to ensure seamless loop on wide screens.
+       */
+      const referenceWidth = Math.max(this.containerWidth, window.innerWidth);
       repeatCount = Math.max(
-          this.options.repeatCount,
-          Math.ceil((this.containerWidth * this.options.repeatCount) / this.contentWidth)
+        this.options.repeatCount,
+        Math.ceil((referenceWidth * this.options.repeatCount) / this.contentWidth)
       );
 
       const fragment = document.createDocumentFragment();
@@ -396,41 +485,104 @@ class CometMarqueeInstance {
       this.content.appendChild(fragment);
     }
 
+    /**
+     * For reverse animation, prepends clones so content exists to the LEFT of originals.
+     * Uses viewport width to ensure clones cover the entire visible area.
+     */
+    let prependedClones = [];
+    if (this.options.reverse) {
+      const referenceWidth = Math.max(this.containerWidth, window.innerWidth);
+      const prependSets = Math.max(2, Math.ceil(referenceWidth / this.contentWidth) + 1);
+      const prependFragment = document.createDocumentFragment();
+
+      for (let r = 0; r < prependSets; r++) {
+        this.items.forEach(item => {
+          const clone = item.cloneNode(true);
+          clone.classList.add('comet-marquee-clone');
+          clone.classList.add('comet-marquee-prepend');
+          prependFragment.appendChild(clone);
+          prependedClones.push(clone);
+        });
+      }
+
+      this.content.insertBefore(prependFragment, this.content.firstChild);
+    }
+
     this.dispatchEvent('clones-created', {
       cloneCount: clonedItems.length,
+      prependedCount: prependedClones.length,
       repeatCount,
       forceAnimationEnabled: this.forceAnimationEnabled
     });
 
-    const totalItems = this.items.length + clonedItems.length;
-    const allElements = [...this.items, ...clonedItems];
-    const totalWidthWithClones = allElements.reduce((sum, el) => sum + el.getBoundingClientRect().width, 0) +
-        this.options.gap * (totalItems - 1);
+    const allElements = Array.from(this.content.children);
+    const totalItems = allElements.length;
 
-    this.content.style.width = `${totalWidthWithClones}px`;
+    /**
+     * Calculates total size based on axis (height for vertical, width for horizontal).
+     */
+    const totalSizeWithClones = allElements.reduce((sum, el) => {
+      const rect = el.getBoundingClientRect();
+      return sum + (this.isVertical ? rect.height : rect.width);
+    }, 0) + this.options.gap * (totalItems - 1);
+
+    /**
+     * Applies size to content element based on scrolling axis.
+     */
+    if (this.isVertical) {
+      this.content.style.height = `${totalSizeWithClones}px`;
+    } else {
+      this.content.style.width = `${totalSizeWithClones}px`;
+    }
+
+    /**
+     * Calculates width of prepended clones (for reverse animation offset).
+     */
+    const prependWidth = prependedClones.length > 0
+      ? prependedClones.reduce((sum, el) => {
+        const rect = el.getBoundingClientRect();
+        return sum + (this.isVertical ? rect.height : rect.width);
+      }, 0) + this.options.gap * prependedClones.length
+      : 0;
 
     let shift = 0;
     if (this.options.initialShift === true) {
-      shift = this.containerWidth;
+      shift = this.containerSize;
     } else if (typeof this.options.initialShift === 'number') {
       shift = this.options.initialShift;
     }
 
+    /**
+     * Calculates the precise "Loop Size" (Period) for seamless animation wrapping.
+     */
+    const loopSize = this.contentWidth + this.options.gap;
+
+    /**
+     * Stores loopSize and prependWidth for use in animate() method.
+     */
+    this.loopWidth = loopSize;
+    this.prependWidth = prependWidth;
+
     if (this.options.reverse) {
-      if (this.forceAnimationEnabled) {
-        this.currentTranslate = -(clonedItems.length / this.items.length * this.contentWidth) + shift;
-      } else {
-        this.currentTranslate = -(this.contentWidth * repeatCount) + shift;
-      }
+      this.currentTranslate = -prependWidth - loopSize + shift;
     } else {
       this.currentTranslate = -shift;
     }
-    this.content.style.transform = `translate3d(${this.currentTranslate}px,0,0)`;
+
+    /**
+     * Applies initial transform based on scrolling axis.
+     */
+    if (this.isVertical) {
+      this.content.style.transform = `translate3d(0,${this.currentTranslate}px,0)`;
+    } else {
+      this.content.style.transform = `translate3d(${this.currentTranslate}px,0,0)`;
+    }
 
     this.dispatchEvent('content-setup', {
-      totalWidth: this.content.style.width,
+      totalSize: totalSizeWithClones,
       initialTranslate: this.currentTranslate,
-      forceAnimationEnabled: this.forceAnimationEnabled
+      forceAnimationEnabled: this.forceAnimationEnabled,
+      isVertical: this.isVertical
     });
   }
 
@@ -443,6 +595,29 @@ class CometMarqueeInstance {
 
     this.container.classList.add('is-init-comet-marquee');
 
+    /**
+     * Applies vertical mode setup and height configuration.
+     */
+    if (this.isVertical) {
+      this.container.setAttribute('data-vertical', '');
+
+      if (this.options.height !== null) {
+        const heightValue = typeof this.options.height === 'number'
+          ? `${this.options.height}px`
+          : this.options.height;
+        this.container.style.setProperty('--comet-marquee-height', heightValue);
+      } else if (this.options.develop) {
+        console.warn(`[CometMarquee #${this.idx}] Vertical mode without explicit height. Using CSS default (--comet-marquee-height: 300px).`);
+      }
+    }
+
+    /**
+     * Applies fullWidth/fullHeight CSS stretch before calculating dimensions.
+     */
+    if (this.options.fullWidth) {
+      this.applyFullSize();
+    }
+
     this.calculateDimensions();
     this.setupContent();
     this.applyFadeEdges();
@@ -450,10 +625,123 @@ class CometMarqueeInstance {
 
     this.dispatchEvent('init-complete');
 
-    // Clear initializing flag after a delay
+    /**
+     * Clears initializing flag synchronously after init completes.
+     * Includes fallback timer for edge cases.
+     */
+    this.isInitializing = false;
+
     setTimeout(() => {
       this.isInitializing = false;
     }, 300);
+  }
+
+  /**
+   * Applies fullWidth/fullHeight CSS to stretch the container to 100vw/100vh.
+   * Uses negative margin to compensate for container offset.
+   */
+  applyFullSize() {
+    if (!this.options.fullWidth) return;
+
+    /**
+     * Stores original styles for potential cleanup.
+     */
+    if (!this._originalContainerStyles) {
+      this._originalContainerStyles = {
+        width: this.container.style.width,
+        height: this.container.style.height,
+        maxWidth: this.container.style.maxWidth,
+        maxHeight: this.container.style.maxHeight,
+        marginLeft: this.container.style.marginLeft,
+        marginTop: this.container.style.marginTop,
+        position: this.container.style.position
+      };
+    }
+
+    const rect = this.container.getBoundingClientRect();
+
+    if (this.isVertical) {
+      /**
+       * Vertical mode: stretches container to 100vh.
+       */
+      const offsetTop = rect.top;
+      this.container.style.height = '100vh';
+      this.container.style.maxHeight = '100vh';
+      this.container.style.marginTop = `-${offsetTop}px`;
+      this.dispatchEvent('fullsize-applied', { offsetTop, axis: 'vertical' });
+    } else {
+      /**
+       * Horizontal mode: stretches container to 100vw.
+       */
+      const offsetLeft = rect.left;
+      this.container.style.width = '100vw';
+      this.container.style.maxWidth = '100vw';
+      this.container.style.marginLeft = `-${offsetLeft}px`;
+      this.dispatchEvent('fullsize-applied', { offsetLeft, axis: 'horizontal' });
+    }
+
+    /**
+     * Ensures position allows margin to work (sets to relative if static).
+     */
+    const computedPosition = getComputedStyle(this.container).position;
+    if (computedPosition === 'static') {
+      this.container.style.position = 'relative';
+    }
+
+    /**
+     * Sets up debounced resize handler for fullWidth updates.
+     */
+    if (!this._fullWidthResizeHandler) {
+      this._fullWidthResizeHandler = () => {
+        if (this._fullWidthDebounceTimeout) {
+          clearTimeout(this._fullWidthDebounceTimeout);
+        }
+        this._fullWidthDebounceTimeout = setTimeout(() => {
+          this.updateFullSize();
+        }, 150);
+      };
+      window.addEventListener('resize', this._fullWidthResizeHandler);
+    }
+  }
+
+  /**
+   * Updates fullSize offset on resize.
+   */
+  updateFullSize() {
+    if (!this.options.fullWidth) return;
+
+    /**
+     * Temporarily resets styles to get true offset.
+     */
+    if (this.isVertical) {
+      this.container.style.height = this._originalContainerStyles?.height || '';
+      this.container.style.marginTop = this._originalContainerStyles?.marginTop || '';
+    } else {
+      this.container.style.width = this._originalContainerStyles?.width || '';
+      this.container.style.marginLeft = this._originalContainerStyles?.marginLeft || '';
+    }
+
+    /**
+     * Recalculates offset based on current position.
+     */
+    const rect = this.container.getBoundingClientRect();
+
+    /**
+     * Reapplies fullWidth/fullHeight styles with updated offset.
+     */
+    if (this.isVertical) {
+      const offsetTop = rect.top;
+      this.container.style.height = '100vh';
+      this.container.style.maxHeight = '100vh';
+      this.container.style.marginTop = `-${offsetTop}px`;
+      this.dispatchEvent('fullsize-updated', { offsetTop });
+    } else {
+      const offsetLeft = rect.left;
+      this.container.style.width = '100vw';
+      this.container.style.maxWidth = '100vw';
+      this.container.style.marginLeft = `-${offsetLeft}px`;
+      this.dispatchEvent('fullsize-updated', { offsetLeft });
+    }
   }
 
   /**
@@ -486,23 +774,42 @@ class CometMarqueeInstance {
     this.lastTime = currentTime;
 
     if (!this.isPaused) {
-      const totalContentWidth = this.content.getBoundingClientRect().width;
+      /**
+       * Uses stored loopSize for consistent wrapping.
+       */
+      const loopSize = this.loopWidth || (this.contentWidth + this.options.gap);
 
       if (this.options.reverse) {
         this.currentTranslate += this.options.speed * dt;
-        if (this.currentTranslate >= 0) {
-          this.currentTranslate -= totalContentWidth;
+
+        /**
+         * Wrap point for reverse: when we've scrolled through one full period.
+         */
+        const wrapPoint = -(this.prependWidth || 0);
+        if (this.currentTranslate >= wrapPoint) {
+          this.currentTranslate -= loopSize;
           this.dispatchEvent('animation-cycle', { direction: 'reverse' });
         }
       } else {
         this.currentTranslate -= this.options.speed * dt;
-        if (this.currentTranslate <= -totalContentWidth) {
-          this.currentTranslate += totalContentWidth;
+
+        /**
+         * Wrap point for forward: when we've scrolled past one full period.
+         */
+        if (this.currentTranslate <= -loopSize) {
+          this.currentTranslate += loopSize;
           this.dispatchEvent('animation-cycle', { direction: 'forward' });
         }
       }
 
-      this.content.style.transform = `translate3d(${this.currentTranslate}px,0,0)`;
+      /**
+       * Applies axis-aware transform.
+       */
+      if (this.isVertical) {
+        this.content.style.transform = `translate3d(0,${this.currentTranslate}px,0)`;
+      } else {
+        this.content.style.transform = `translate3d(${this.currentTranslate}px,0,0)`;
+      }
     }
 
     this.animationId = requestAnimationFrame(this.animate);
@@ -533,6 +840,18 @@ class CometMarqueeInstance {
    */
   resume() {
     this.calculateDimensions();
+
+    /**
+     * Fix for resume/init race condition: if we should animate now but content wasn't setup
+     * (e.g. width was 0 initially), run setup.
+     */
+    if (this.shouldAnimate && !this.contentSetup) {
+      if (this.options.develop) {
+        console.log(`[CometMarquee #${this.idx}] Resume: forcing content setup (width: ${this.contentWidth})`);
+      }
+      this.setupContent();
+    }
+
     if (!this.shouldAnimate) {
       this.stop();
       return;
@@ -585,7 +904,9 @@ class CometMarqueeInstance {
    * Recalculates dimensions, rebuilds clones, and restarts the animation.
    */
   refresh() {
-    // CRITICAL: Prevent refresh loops
+    /**
+     * CRITICAL: Prevents refresh loops by checking if refresh or initialization is already in progress.
+     */
     if (this.isRefreshing || this.isInitializing) {
       if (this.options.develop) {
         console.warn(`[CometMarquee #${this.idx}] Refresh blocked - already in progress`);
@@ -602,12 +923,15 @@ class CometMarqueeInstance {
 
     this.dispatchEvent('refresh-complete');
 
+    /**
+     * Increased timeout to 500ms for maximum stability.
+     */
     setTimeout(() => {
       this.isRefreshing = false;
       if (this.options.develop) {
         console.log(`[CometMarquee #${this.idx}] Refresh guard cleared`);
       }
-    }, 500); // Increased to 500ms for maximum stability
+    }, 500);
   }
 
   /**
@@ -714,12 +1038,16 @@ class CometMarqueeInstance {
       this.io.observe(this.container);
     }
 
-    // CRITICAL FIX: Multi-layer ResizeObserver protection
+    /**
+     * CRITICAL FIX: Multi-layer ResizeObserver protection to prevent infinite loops.
+     */
     this.ro = new ResizeObserver((entries) => {
       const now = performance.now();
       this.resizeObserverCallCount++;
 
-      // Layer 1: Block during refresh/init
+      /**
+       * Layer 1: Blocks during refresh/init to prevent cascading calls.
+       */
       if (this.isRefreshing || this.isInitializing) {
         if (this.options.develop) {
           console.log(`[CometMarquee #${this.idx}] RO blocked - refreshing/initializing`);
@@ -727,9 +1055,11 @@ class CometMarqueeInstance {
         return;
       }
 
-      // Layer 2: Detect rapid-fire calls (likely a loop)
+      /**
+       * Layer 2: Detects rapid-fire calls (likely a loop, less than 50ms = suspicious).
+       */
       const timeSinceLastResize = now - this.lastResizeTimestamp;
-      if (timeSinceLastResize < 50) { // Less than 50ms = suspicious
+      if (timeSinceLastResize < 50) {
         if (this.options.develop) {
           console.warn(`[CometMarquee #${this.idx}] RO call too rapid (${timeSinceLastResize.toFixed(1)}ms) - ignoring`);
         }
@@ -737,90 +1067,105 @@ class CometMarqueeInstance {
       }
       this.lastResizeTimestamp = now;
 
-      // Layer 3: Detect excessive calls
+      /**
+       * Layer 3: Detects excessive calls (prevents runaway loops).
+       */
       if (this.resizeObserverCallCount > 100) {
         console.error(`[CometMarquee #${this.idx}] ResizeObserver loop detected! Disconnecting to prevent crash.`);
         this.ro.disconnect();
         return;
       }
 
-      // Layer 4: Check window width change (real resize vs internal)
-      const currentWindowWidth = window.innerWidth;
-      const windowWidthChanged = currentWindowWidth !== this.lastWindowWidth;
+      /**
+       * Layer 4: Checks window size change (real resize vs internal).
+       */
+      const currentWindowSize = this.isVertical ? window.innerHeight : window.innerWidth;
+      const windowSizeChanged = currentWindowSize !== this.lastWindowWidth;
 
-      // Layer 5: Check container width change
-      let hasContainerWidthChanged = false;
+      /**
+       * Layer 5: Checks container size change (width for horizontal, height for vertical).
+       */
+      let hasContainerSizeChanged = false;
       for (const entry of entries) {
-        const currentWidth = Math.round(entry.contentRect.width);
+        const currentSize = Math.round(this.isVertical ? entry.contentRect.height : entry.contentRect.width);
 
         if (this.lastContainerRectWidth === 0) {
-          this.lastContainerRectWidth = currentWidth;
+          this.lastContainerRectWidth = currentSize;
           if (this.options.develop) {
-            console.log(`[CometMarquee #${this.idx}] Initial width: ${currentWidth}px`);
-          }
-          return; // First call - don't refresh
-        }
-
-        const widthDiff = Math.abs(currentWidth - this.lastContainerRectWidth);
-
-        // Layer 6: Ignore micro-changes
-        if (widthDiff < 5) { // Increased threshold to 5px
-          if (this.options.develop) {
-            console.log(`[CometMarquee #${this.idx}] Width change too small (${widthDiff}px) - ignoring`);
+            console.log(`[CometMarquee #${this.idx}] Initial ${this.isVertical ? 'height' : 'width'}: ${currentSize}px`);
           }
           return;
         }
 
-        // Layer 7: Only process if window actually resized OR container changed significantly
-        if (!windowWidthChanged && widthDiff < 10) {
+        const sizeDiff = Math.abs(currentSize - this.lastContainerRectWidth);
+
+        /**
+         * Layer 6: Ignores micro-changes (less than 5px).
+         */
+        if (sizeDiff < 5) {
           if (this.options.develop) {
-            console.log(`[CometMarquee #${this.idx}] Internal width change without window resize - ignoring`);
+            console.log(`[CometMarquee #${this.idx}] Size change too small (${sizeDiff}px) - ignoring`);
+          }
+          return;
+        }
+
+        /**
+         * Layer 7: Only processes if window actually resized OR container changed significantly.
+         */
+        if (!windowSizeChanged && sizeDiff < 10) {
+          if (this.options.develop) {
+            console.log(`[CometMarquee #${this.idx}] Internal size change without window resize - ignoring`);
           }
           return;
         }
 
         if (this.options.develop) {
-          console.log(`[CometMarquee #${this.idx}] Width: ${this.lastContainerRectWidth}px → ${currentWidth}px (window: ${windowWidthChanged})`);
+          console.log(`[CometMarquee #${this.idx}] ${this.isVertical ? 'Height' : 'Width'}: ${this.lastContainerRectWidth}px → ${currentSize}px (window: ${windowSizeChanged})`);
         }
 
-        this.lastContainerRectWidth = currentWidth;
-        hasContainerWidthChanged = true;
+        this.lastContainerRectWidth = currentSize;
+        hasContainerSizeChanged = true;
       }
 
-      if (!hasContainerWidthChanged && !windowWidthChanged) {
+      if (!hasContainerSizeChanged && !windowSizeChanged) {
         return;
       }
 
-      // Update window width tracker
-      this.lastWindowWidth = currentWindowWidth;
+      /**
+       * Updates window size tracker.
+       */
+      this.lastWindowWidth = currentWindowSize;
 
       this.dispatchEvent('container-resized');
       this.applyFadeEdges();
 
-      // Layer 8: Aggressive debounce
+      /**
+       * Layer 8: Aggressive debounce (increased to 300ms).
+       */
       if (this._refreshTimeout) clearTimeout(this._refreshTimeout);
       this._refreshTimeout = setTimeout(() => {
-        this.resizeObserverCallCount = 0; // Reset counter
+        this.resizeObserverCallCount = 0;
         this.refresh();
-      }, 300); // Increased to 300ms
+      }, 300);
     });
 
     this.ro.observe(this.container);
 
-    window.addEventListener('orientationchange', () => {
+    this._orientationChangeHandler = () => {
       this.dispatchEvent('orientation-change');
       setTimeout(() => {
         this.applyFadeEdges();
         this.refresh();
       }, 200);
-    });
+    };
+    window.addEventListener('orientationchange', this._orientationChangeHandler);
 
     this._fadeEdgesResizeHandler = () => {
       this.applyFadeEdges();
     };
     window.addEventListener('resize', this._fadeEdgesResizeHandler);
 
-    document.addEventListener('visibilitychange', () => {
+    this._visibilityHandler = () => {
       if (document.visibilityState === 'visible') {
         this.dispatchEvent('document-visible');
         this.resume();
@@ -828,7 +1173,8 @@ class CometMarqueeInstance {
         this.dispatchEvent('document-hidden');
         this.pause();
       }
-    });
+    };
+    document.addEventListener('visibilitychange', this._visibilityHandler);
 
     const mql = window.matchMedia('(prefers-reduced-motion: reduce)');
     this._motionChangeHandler = () => {
@@ -890,6 +1236,10 @@ class CometMarqueeInstance {
 
     this.stop();
 
+    if (this._refreshTimeout) {
+      clearTimeout(this._refreshTimeout);
+    }
+
     if (window.__allCometMarqueeInstances) {
       const index = window.__allCometMarqueeInstances.indexOf(this);
       if (index > -1) {
@@ -906,7 +1256,34 @@ class CometMarqueeInstance {
     document.removeEventListener('click', this._documentClick);
     window.removeEventListener('resize', this._resizeHandler);
     window.removeEventListener('resize', this._fadeEdgesResizeHandler);
+    window.removeEventListener('orientationchange', this._orientationChangeHandler);
     document.removeEventListener('visibilitychange', this._visibilityHandler);
+
+    /**
+     * Cleanup fullSize (horizontal and vertical) handlers and restore original styles.
+     */
+    if (this._fullWidthResizeHandler) {
+      window.removeEventListener('resize', this._fullWidthResizeHandler);
+    }
+    if (this._fullWidthDebounceTimeout) {
+      clearTimeout(this._fullWidthDebounceTimeout);
+    }
+    if (this._originalContainerStyles) {
+      this.container.style.width = this._originalContainerStyles.width;
+      this.container.style.height = this._originalContainerStyles.height;
+      this.container.style.maxWidth = this._originalContainerStyles.maxWidth;
+      this.container.style.maxHeight = this._originalContainerStyles.maxHeight;
+      this.container.style.marginLeft = this._originalContainerStyles.marginLeft;
+      this.container.style.marginTop = this._originalContainerStyles.marginTop;
+      this.container.style.position = this._originalContainerStyles.position;
+    }
+
+    /**
+     * Removes vertical attribute from container.
+     */
+    if (this.isVertical) {
+      this.container.removeAttribute('data-vertical');
+    }
 
     const mql = window.matchMedia('(prefers-reduced-motion: reduce)');
     if (mql.removeEventListener) {
@@ -917,7 +1294,7 @@ class CometMarqueeInstance {
   }
 }
 
-export { CometMarquee };
+
 export default CometMarquee;
 
 if (typeof window !== 'undefined') {
