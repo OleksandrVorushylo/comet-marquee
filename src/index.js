@@ -52,7 +52,7 @@ class CometMarquee {
      * @type {CometMarqueeInstance[]}
      */
     this.instances = this.containers.map((container, idx) =>
-      new CometMarqueeInstance(container, options, idx)
+        new CometMarqueeInstance(container, options, idx)
     );
   }
 
@@ -231,6 +231,9 @@ class CometMarqueeInstance {
     this._fullWidthResizeHandler = null;
     this._fullWidthDebounceTimeout = null;
     this._originalContainerStyles = null;
+    this._initFallbackTimeout = null;
+    this._refreshingGuardTimeout = null;
+    this._orientationTimeout = null;
 
     this.init();
     this.bindEvents();
@@ -341,8 +344,8 @@ class CometMarqueeInstance {
      */
     const maxSets = 20;
     const setsNeeded = Math.min(
-      Math.ceil(targetSize / singleSetSize),
-      maxSets
+        Math.ceil(targetSize / singleSetSize),
+        maxSets
     );
 
     const clonesNeeded = Math.max(0, (setsNeeded - 1) * this.items.length);
@@ -355,7 +358,7 @@ class CometMarqueeInstance {
 
     if (cappedClones < clonesNeeded && this.options.develop) {
       console.warn(
-        `[CometMarquee #${this.idx}] Clone count capped at ${maxClones} (would be ${clonesNeeded})`
+          `[CometMarquee #${this.idx}] Clone count capped at ${maxClones} (would be ${clonesNeeded})`
       );
     }
 
@@ -467,8 +470,8 @@ class CometMarqueeInstance {
        */
       const referenceWidth = Math.max(this.containerWidth, window.innerWidth);
       repeatCount = Math.max(
-        this.options.repeatCount,
-        Math.ceil((referenceWidth * this.options.repeatCount) / this.contentWidth)
+          this.options.repeatCount,
+          Math.ceil((referenceWidth * this.options.repeatCount) / this.contentWidth)
       );
 
       const fragment = document.createDocumentFragment();
@@ -539,11 +542,11 @@ class CometMarqueeInstance {
      * Calculates width of prepended clones (for reverse animation offset).
      */
     const prependWidth = prependedClones.length > 0
-      ? prependedClones.reduce((sum, el) => {
-        const rect = el.getBoundingClientRect();
-        return sum + (this.isVertical ? rect.height : rect.width);
-      }, 0) + this.options.gap * prependedClones.length
-      : 0;
+        ? prependedClones.reduce((sum, el) => {
+      const rect = el.getBoundingClientRect();
+      return sum + (this.isVertical ? rect.height : rect.width);
+    }, 0) + this.options.gap * prependedClones.length
+        : 0;
 
     let shift = 0;
     if (this.options.initialShift === true) {
@@ -603,8 +606,8 @@ class CometMarqueeInstance {
 
       if (this.options.height !== null) {
         const heightValue = typeof this.options.height === 'number'
-          ? `${this.options.height}px`
-          : this.options.height;
+            ? `${this.options.height}px`
+            : this.options.height;
         this.container.style.setProperty('--comet-marquee-height', heightValue);
       } else if (this.options.develop) {
         console.warn(`[CometMarquee #${this.idx}] Vertical mode without explicit height. Using CSS default (--comet-marquee-height: 300px).`);
@@ -631,8 +634,10 @@ class CometMarqueeInstance {
      */
     this.isInitializing = false;
 
-    setTimeout(() => {
+    if (this._initFallbackTimeout) clearTimeout(this._initFallbackTimeout);
+    this._initFallbackTimeout = setTimeout(() => {
       this.isInitializing = false;
+      this._initFallbackTimeout = null;
     }, 300);
   }
 
@@ -839,6 +844,11 @@ class CometMarqueeInstance {
    * Resumes the marquee animation.
    */
   resume() {
+    // Early return if already running and content is set up
+    if (!this.isPaused && this.contentSetup && this.isAnimating) {
+      return;
+    }
+
     this.calculateDimensions();
 
     /**
@@ -923,11 +933,10 @@ class CometMarqueeInstance {
 
     this.dispatchEvent('refresh-complete');
 
-    /**
-     * Increased timeout to 500ms for maximum stability.
-     */
-    setTimeout(() => {
+    if (this._refreshingGuardTimeout) clearTimeout(this._refreshingGuardTimeout);
+    this._refreshingGuardTimeout = setTimeout(() => {
       this.isRefreshing = false;
+      this._refreshingGuardTimeout = null;
       if (this.options.develop) {
         console.log(`[CometMarquee #${this.idx}] Refresh guard cleared`);
       }
@@ -1153,7 +1162,9 @@ class CometMarqueeInstance {
 
     this._orientationChangeHandler = () => {
       this.dispatchEvent('orientation-change');
-      setTimeout(() => {
+      if (this._orientationTimeout) clearTimeout(this._orientationTimeout);
+      this._orientationTimeout = setTimeout(() => {
+        this._orientationTimeout = null;
         this.applyFadeEdges();
         this.refresh();
       }, 200);
@@ -1167,8 +1178,10 @@ class CometMarqueeInstance {
 
     this._visibilityHandler = () => {
       if (document.visibilityState === 'visible') {
-        this.dispatchEvent('document-visible');
-        this.resume();
+        if (this.options.pauseOnInvisible) {
+          this.dispatchEvent('document-visible');
+          this.resume();
+        }
       } else if (this.options.pauseOnInvisible) {
         this.dispatchEvent('document-hidden');
         this.pause();
@@ -1238,6 +1251,15 @@ class CometMarqueeInstance {
 
     if (this._refreshTimeout) {
       clearTimeout(this._refreshTimeout);
+    }
+    if (this._initFallbackTimeout) {
+      clearTimeout(this._initFallbackTimeout);
+    }
+    if (this._refreshingGuardTimeout) {
+      clearTimeout(this._refreshingGuardTimeout);
+    }
+    if (this._orientationTimeout) {
+      clearTimeout(this._orientationTimeout);
     }
 
     if (window.__allCometMarqueeInstances) {
