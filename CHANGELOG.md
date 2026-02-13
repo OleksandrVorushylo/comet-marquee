@@ -31,5 +31,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed race conditions in `resume` and `init` methods that could cause animation glitches.
 - Fixed missing options in TypeScript/JSDoc definitions (`fullWidth`, `vertical`, `height`).
 
-## [1.1.28] - 2024-XX-XX
+## [1.1.28] - 2025-XX-XX
 - Maintenance release with stability improvements.
